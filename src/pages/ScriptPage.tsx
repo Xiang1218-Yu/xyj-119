@@ -2,12 +2,13 @@ import { motion } from 'framer-motion';
 import { 
   Scroll, ArrowLeft, RefreshCw, Download, Copy, Check, 
   Quote, Gift, Play, Clock, FileText, Sparkles, ChevronRight,
-  Bookmark, Share2, X, Globe
+  Bookmark, Share2, X, Globe, Edit3, EyeOff
 } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
-import { useState, useEffect, useCallback } from 'react';
-import { copyToClipboard, showToast } from '@/utils/copyToClipboard';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { copyToClipboard, showToast, copyRichTextToClipboard } from '@/utils/copyToClipboard';
+import { scriptToMarkdown, markdownToHtml } from '@/utils/scriptToMarkdown';
 
 export default function ScriptPage() {
   const { 
@@ -15,22 +16,56 @@ export default function ScriptPage() {
     scriptFramework, 
     selectedTitles,
     setCurrentPage,
-    generateScriptForTopic
+    generateScriptForTopic,
+    updateScriptFramework,
+    updateScriptBodySection,
+    updateScriptGoldenQuote,
+    updateScriptEasterEgg
   } = useAppStore();
   
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'full' | 'hook' | 'body' | 'quotes' | 'eggs'>('full');
+  const [activeTab, setActiveTab] = useState<'full' | 'hook' | 'body' | 'quotes' | 'eggs' | 'markdown'>('full');
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareCopied, setShareCopied] = useState<string | null>(null);
   const [hasGenerated, setHasGenerated] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [localMarkdown, setLocalMarkdown] = useState('');
 
   useEffect(() => {
     if (selectedTopic && !scriptFramework && !hasGenerated) {
       setHasGenerated(true);
       generateScriptForTopic(selectedTopic.id);
     }
-  }, [selectedTopic, hasGenerated]);
+  }, [selectedTopic, hasGenerated, generateScriptForTopic, scriptFramework]);
+
+  useEffect(() => {
+    if (scriptFramework) {
+      setLocalMarkdown(scriptToMarkdown(scriptFramework, selectedTitles));
+    }
+  }, [scriptFramework, selectedTitles]);
+
+  const getFullScriptMarkdown = useCallback(() => {
+    if (!scriptFramework) return '';
+    return scriptToMarkdown(scriptFramework, selectedTitles);
+  }, [scriptFramework, selectedTitles]);
+
+  const handleCopy = useCallback(async (text: string, sectionId: string, isRichText = false) => {
+    let result;
+    if (isRichText) {
+      const html = markdownToHtml(text);
+      result = await copyRichTextToClipboard(text, html);
+    } else {
+      result = await copyToClipboard(text);
+    }
+    if (result.success) {
+      setCopiedSection(sectionId);
+      showToast('已复制到剪贴板', 'success');
+      setTimeout(() => setCopiedSection(null), 2000);
+    } else {
+      showToast(`复制失败：${result.error}`, 'error');
+    }
+  }, []);
 
   const handleRegenerate = async () => {
     if (!selectedTopic || isRegenerating) return;
@@ -103,6 +138,10 @@ export default function ScriptPage() {
     }
   }, [scriptFramework, selectedTopic, selectedTitles]);
 
+  const markdownPreviewHtml = useMemo(() => {
+    return markdownToHtml(localMarkdown);
+  }, [localMarkdown]);
+
   if (!selectedTopic) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
@@ -129,46 +168,53 @@ export default function ScriptPage() {
     );
   }
 
-  const handleCopy = useCallback(async (text: string, sectionId: string) => {
-    const result = await copyToClipboard(text);
-    if (result.success) {
-      setCopiedSection(sectionId);
-      showToast('已复制到剪贴板', 'success');
-      setTimeout(() => setCopiedSection(null), 2000);
-    } else {
-      showToast(`复制失败：${result.error}`, 'error');
+  const EditableText = ({ 
+    value, 
+    onChange, 
+    className = '', 
+    placeholder = '点击编辑...',
+    multiline = false
+  }: { 
+    value: string; 
+    onChange: (value: string) => void; 
+    className?: string;
+    placeholder?: string;
+    multiline?: boolean;
+  }) => {
+    if (!isEditMode) {
+      return <span className={className}>{value || placeholder}</span>;
     }
-  }, []);
-
-  const getFullScriptText = () => {
-    if (!scriptFramework) return '';
-    return [
-      `【标题】${scriptFramework.title}`,
-      `【时长】${scriptFramework.totalDuration}`,
-      '',
-      `【开头引入】（${scriptFramework.hook.type} - ${scriptFramework.hook.duration}）`,
-      scriptFramework.hook.content,
-      '',
-      '【正文分论点】',
-      ...scriptFramework.body.map((s, i) => [
-        `${i + 1}. ${s.title}（${s.duration}）`,
-        s.content,
-        s.goldenQuote ? `金句：${s.goldenQuote}` : '',
-        ''
-      ].filter(Boolean).join('\n')),
-      '',
-      '【金句推荐】',
-      ...scriptFramework.goldenQuotes.map(q => `- [${q.type}] ${q.content}（${q.position}）`),
-      '',
-      '【彩蛋规划】',
-      ...scriptFramework.easterEggs.map(e => `- [${e.type}] ${e.position}：${e.description}`),
-      '',
-      `【结尾升华】（${scriptFramework.ending.duration}）`,
-      scriptFramework.ending.content,
-      '',
-      '【互动引导】',
-      scriptFramework.ending.callToAction,
-    ].join('\n');
+    
+    if (multiline) {
+      return (
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className={cn(
+            "w-full bg-slate-800/50 border border-slate-600 rounded-lg px-3 py-2",
+            "text-slate-200 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500",
+            "transition-all resize-none",
+            className
+          )}
+          placeholder={placeholder}
+        />
+      );
+    }
+    
+    return (
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={cn(
+          "w-full bg-slate-800/50 border border-slate-600 rounded-lg px-3 py-1.5",
+          "text-slate-200 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500",
+          "transition-all",
+          className
+        )}
+        placeholder={placeholder}
+      />
+    );
   };
 
   const tabs = [
@@ -177,6 +223,7 @@ export default function ScriptPage() {
     { id: 'body', label: '正文框架' },
     { id: 'quotes', label: '金句推荐' },
     { id: 'eggs', label: '彩蛋规划' },
+    { id: 'markdown', label: 'Markdown' },
   ];
 
   return (
@@ -204,9 +251,24 @@ export default function ScriptPage() {
                     <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
                     <span className="text-xs font-medium text-emerald-300">AI 生成</span>
                   </div>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setIsEditMode(!isEditMode)}
+                    className={cn(
+                      "px-3 py-1 rounded-full border flex items-center gap-1.5 transition-all",
+                      isEditMode
+                        ? "bg-amber-500/20 border-amber-500/30 text-amber-300"
+                        : "bg-slate-700/50 border-slate-600 text-slate-400 hover:text-slate-200"
+                    )}
+                  >
+                    {isEditMode ? <EyeOff className="w-3.5 h-3.5" /> : <Edit3 className="w-3.5 h-3.5" />}
+                    <span className="text-xs font-medium">{isEditMode ? '编辑中' : '编辑'}</span>
+                  </motion.button>
                 </div>
                 <p className="text-slate-400 text-sm">
                   为选题 <span className="text-violet-400 font-medium">「{selectedTopic.title}」</span> 生成的完整脚本框架
+                  {isEditMode && <span className="ml-2 text-amber-400">✏️ 点击内容即可编辑</span>}
                 </p>
               </div>
             </div>
@@ -236,18 +298,20 @@ export default function ScriptPage() {
                 whileTap={{ scale: 0.98 }}
                 onClick={() => {
                   if (!scriptFramework) return;
-                  const blob = new Blob([getFullScriptText()], { type: 'text/plain' });
+                  const markdown = getFullScriptMarkdown();
+                  const blob = new Blob([markdown], { type: 'text/markdown' });
                   const url = URL.createObjectURL(blob);
                   const a = document.createElement('a');
                   a.href = url;
-                  a.download = `${scriptFramework.title}.txt`;
+                  a.download = `${scriptFramework.title}.md`;
                   a.click();
                   URL.revokeObjectURL(url);
+                  showToast('Markdown 文件已下载', 'success');
                 }}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
               >
                 <Download className="w-4 h-4" />
-                <span className="text-sm">导出脚本</span>
+                <span className="text-sm">导出 .md</span>
               </motion.button>
             </div>
           </div>
@@ -289,269 +353,481 @@ export default function ScriptPage() {
       <div className="px-8 py-6">
         {scriptFramework ? (
           <div className="max-w-4xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-6"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-white">{scriptFramework.title}</h2>
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800">
-                  <Clock className="w-4 h-4 text-slate-400" />
-                  <span className="text-sm text-slate-300">时长：{scriptFramework.totalDuration}</span>
-                </div>
-              </div>
-            </motion.div>
-
-            {(activeTab === 'full' || activeTab === 'hook') && (
+            {activeTab === 'markdown' ? (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="mb-6"
+                className="space-y-4"
               >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center">
-                      <Play className="w-4 h-4 text-white" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-white">开头引入（{scriptFramework.hook.type}）</h3>
-                    <span className="text-xs text-slate-500">{scriptFramework.hook.duration}</span>
-                  </div>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-white">Markdown 源码</h3>
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => handleCopy(scriptFramework.hook.content, 'hook')}
+                    onClick={() => handleCopy(localMarkdown, 'markdown-source', true)}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 text-sm transition-colors"
                   >
-                    {copiedSection === 'hook' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                    {copiedSection === 'hook' ? '已复制' : '复制'}
+                    {copiedSection === 'markdown-source' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                    {copiedSection === 'markdown-source' ? '已复制' : '复制带样式'}
                   </motion.button>
                 </div>
-                <div className="p-5 rounded-2xl bg-gradient-to-br from-pink-500/10 to-rose-500/10 border border-pink-500/20">
-                  <p className="text-slate-200 leading-relaxed">{scriptFramework.hook.content}</p>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-slate-400 mb-2">编辑器</p>
+                    <textarea
+                      value={localMarkdown}
+                      onChange={(e) => setLocalMarkdown(e.target.value)}
+                      className="w-full h-[600px] p-4 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 font-mono text-sm focus:outline-none focus:border-violet-500 resize-none"
+                      placeholder="# 在这里编辑 Markdown..."
+                    />
+                  </div>
+                  <div>
+                    <p className="text-sm text-slate-400 mb-2">预览</p>
+                    <div 
+                      className="w-full h-[600px] p-4 rounded-xl bg-white border border-slate-700 overflow-auto text-slate-900"
+                      dangerouslySetInnerHTML={{ __html: markdownPreviewHtml }}
+                    />
+                  </div>
                 </div>
               </motion.div>
-            )}
-
-            {(activeTab === 'full' || activeTab === 'body') && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="mb-6"
-              >
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center">
-                    <FileText className="w-4 h-4 text-white" />
+            ) : (
+              <>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-6"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    {isEditMode ? (
+                      <EditableText
+                        value={scriptFramework.title}
+                        onChange={(v) => updateScriptFramework({ title: v })}
+                        className="text-xl font-bold text-white bg-transparent"
+                        placeholder="输入脚本标题..."
+                      />
+                    ) : (
+                      <h2 className="text-xl font-bold text-white">{scriptFramework.title}</h2>
+                    )}
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800">
+                      <Clock className="w-4 h-4 text-slate-400" />
+                      {isEditMode ? (
+                        <EditableText
+                          value={scriptFramework.totalDuration}
+                          onChange={(v) => updateScriptFramework({ totalDuration: v })}
+                          className="text-sm text-slate-300 w-24"
+                          placeholder="时长"
+                        />
+                      ) : (
+                        <span className="text-sm text-slate-300">时长：{scriptFramework.totalDuration}</span>
+                      )}
+                    </div>
                   </div>
-                  <h3 className="text-lg font-semibold text-white">正文分论点</h3>
-                </div>
-                
-                <div className="space-y-4">
-                  {scriptFramework.body.map((section, index) => (
-                    <motion.div
-                      key={section.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.3 + index * 0.1 }}
-                      className="relative"
-                    >
-                      <div className="absolute left-4 top-12 bottom-0 w-px bg-gradient-to-b from-violet-500/50 to-transparent" />
-                      
-                      <div className="flex items-start gap-4">
-                        <div className="relative z-10 w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center flex-shrink-0">
-                          <span className="text-sm font-bold text-white">{index + 1}</span>
+                </motion.div>
+
+                {(activeTab === 'full' || activeTab === 'hook') && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="mb-6"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center">
+                          <Play className="w-4 h-4 text-white" />
                         </div>
-                        
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-semibold text-slate-100">{section.title}</h4>
-                              <span className="text-xs text-slate-500">{section.duration}</span>
-                            </div>
-                            <motion.button
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => handleCopy(section.content, section.id)}
-                              className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs transition-colors"
-                            >
-                              {copiedSection === section.id ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                            </motion.button>
-                          </div>
-                          
-                          <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50 mb-2">
-                            <p className="text-slate-300 text-sm leading-relaxed">{section.content}</p>
-                          </div>
-                          
-                          {section.goldenQuote && (
-                            <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                              <Quote className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-                              <p className="text-sm text-amber-200 italic">{section.goldenQuote}</p>
-                            </div>
+                        <h3 className="text-lg font-semibold text-white">开头引入（
+                          {isEditMode ? (
+                            <EditableText
+                              value={scriptFramework.hook.type}
+                              onChange={(v) => updateScriptFramework({ hook: { ...scriptFramework.hook, type: v } })}
+                              className="text-sm w-24 bg-transparent text-pink-300"
+                              placeholder="类型"
+                            />
+                          ) : (
+                            <span className="text-pink-300">{scriptFramework.hook.type}</span>
                           )}
-                        </div>
+                          ）</h3>
+                        {isEditMode ? (
+                          <EditableText
+                            value={scriptFramework.hook.duration}
+                            onChange={(v) => updateScriptFramework({ hook: { ...scriptFramework.hook, duration: v } })}
+                            className="text-xs text-slate-500 w-20 bg-transparent"
+                            placeholder="时长"
+                          />
+                        ) : (
+                          <span className="text-xs text-slate-500">{scriptFramework.hook.duration}</span>
+                        )}
                       </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-
-            {(activeTab === 'full' || activeTab === 'quotes') && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
-                className="mb-6"
-              >
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
-                    <Quote className="w-4 h-4 text-white" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-white">金句推荐</h3>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {scriptFramework.goldenQuotes.map((quote, index) => (
-                    <motion.div
-                      key={quote.id}
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.5 + index * 0.1 }}
-                      className="relative group"
-                    >
-                      <div className="p-4 rounded-xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20 hover:border-amber-500/40 transition-colors">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-xs text-amber-300">{quote.type}</span>
-                            <span className="text-xs text-slate-500">{quote.position}</span>
-                          </div>
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => handleCopy(quote.content, quote.id)}
-                            className="opacity-0 group-hover:opacity-100 flex items-center gap-1 px-2 py-1 rounded-md bg-slate-800 text-slate-400 text-xs transition-all"
-                          >
-                            {copiedSection === quote.id ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                          </motion.button>
-                        </div>
-                        <p className="text-amber-100 italic">"{quote.content}"</p>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-
-            {(activeTab === 'full' || activeTab === 'eggs') && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 }}
-                className="mb-6"
-              >
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center">
-                    <Gift className="w-4 h-4 text-white" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-white">彩蛋规划</h3>
-                </div>
-                
-                <div className="space-y-3">
-                  {scriptFramework.easterEggs.map((egg, index) => (
-                    <motion.div
-                      key={egg.id}
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.7 + index * 0.1 }}
-                      className="p-4 rounded-xl bg-gradient-to-br from-cyan-500/10 to-teal-500/10 border border-cyan-500/20"
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center flex-shrink-0">
-                          <span className="text-sm font-bold text-cyan-400">{index + 1}</span>
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="px-2 py-0.5 rounded-md bg-cyan-500/20 text-xs text-cyan-300">{egg.type}</span>
-                            <span className="text-xs text-slate-500">位置：{egg.position}</span>
-                          </div>
-                          <p className="text-slate-200 text-sm">{egg.description}</p>
-                        </div>
-                        <ChevronRight className="w-5 h-5 text-cyan-400/50" />
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-
-            {(activeTab === 'full' || activeTab === 'hook') && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.8 }}
-                className="mb-6"
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center">
-                      <Bookmark className="w-4 h-4 text-white" />
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => handleCopy(scriptFramework.hook.content, 'hook')}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 text-sm transition-colors"
+                      >
+                        {copiedSection === 'hook' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                        {copiedSection === 'hook' ? '已复制' : '复制'}
+                      </motion.button>
                     </div>
-                    <h3 className="text-lg font-semibold text-white">结尾升华</h3>
-                    <span className="text-xs text-slate-500">{scriptFramework.ending.duration}</span>
-                  </div>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => handleCopy(scriptFramework.ending.content + '\n\n' + scriptFramework.ending.callToAction, 'ending')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 text-sm transition-colors"
-                  >
-                    {copiedSection === 'ending' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                    {copiedSection === 'ending' ? '已复制' : '复制'}
-                  </motion.button>
-                </div>
-                <div className="p-5 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-green-500/10 border border-emerald-500/20">
-                  <p className="text-slate-200 leading-relaxed mb-3">{scriptFramework.ending.content}</p>
-                  <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                    <p className="text-sm text-emerald-200">
-                      <span className="font-medium">互动引导：</span>{scriptFramework.ending.callToAction}
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.9 }}
-              className="flex justify-center gap-4 pt-6 border-t border-slate-800"
-            >
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setShowShareModal(true)}
-                className="flex items-center gap-2 px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
-              >
-                <Share2 className="w-4 h-4" />
-                分享方案
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => handleCopy(getFullScriptText(), 'full')}
-                className={cn(
-                  "flex items-center gap-2 px-6 py-3 rounded-xl font-medium",
-                  "bg-gradient-to-r from-violet-500 to-purple-600 text-white",
-                  "hover:from-violet-600 hover:to-purple-700 transition-all",
-                  "shadow-lg shadow-violet-500/30 hover:shadow-violet-500/50"
+                    <div className="p-5 rounded-2xl bg-gradient-to-br from-pink-500/10 to-rose-500/10 border border-pink-500/20">
+                      {isEditMode ? (
+                        <EditableText
+                          value={scriptFramework.hook.content}
+                          onChange={(v) => updateScriptFramework({ hook: { ...scriptFramework.hook, content: v } })}
+                          multiline
+                          className="text-slate-200 leading-relaxed min-h-[100px]"
+                          placeholder="输入开头引入内容..."
+                        />
+                      ) : (
+                        <p className="text-slate-200 leading-relaxed whitespace-pre-wrap">{scriptFramework.hook.content}</p>
+                      )}
+                    </div>
+                  </motion.div>
                 )}
-              >
-                {copiedSection === 'full' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                {copiedSection === 'full' ? '已复制全部' : '复制完整脚本'}
-              </motion.button>
-            </motion.div>
+
+                {(activeTab === 'full' || activeTab === 'body') && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="mb-6"
+                  >
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center">
+                        <FileText className="w-4 h-4 text-white" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-white">正文分论点</h3>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      {scriptFramework.body.map((section, index) => (
+                        <motion.div
+                          key={section.id}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.3 + index * 0.1 }}
+                          className="relative"
+                        >
+                          <div className="absolute left-4 top-12 bottom-0 w-px bg-gradient-to-b from-violet-500/50 to-transparent" />
+                          
+                          <div className="flex items-start gap-4">
+                            <div className="relative z-10 w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center flex-shrink-0">
+                              <span className="text-sm font-bold text-white">{index + 1}</span>
+                            </div>
+                            
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2 flex-1">
+                                  {isEditMode ? (
+                                    <EditableText
+                                      value={section.title}
+                                      onChange={(v) => updateScriptBodySection(section.id, { title: v })}
+                                      className="font-semibold text-slate-100 flex-1"
+                                      placeholder="分论点标题"
+                                    />
+                                  ) : (
+                                    <h4 className="font-semibold text-slate-100">{section.title}</h4>
+                                  )}
+                                  {isEditMode ? (
+                                    <EditableText
+                                      value={section.duration}
+                                      onChange={(v) => updateScriptBodySection(section.id, { duration: v })}
+                                      className="text-xs text-slate-500 w-20 bg-transparent"
+                                      placeholder="时长"
+                                    />
+                                  ) : (
+                                    <span className="text-xs text-slate-500">{section.duration}</span>
+                                  )}
+                                </div>
+                                <motion.button
+                                  whileHover={{ scale: 1.05 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  onClick={() => handleCopy(section.content, section.id)}
+                                  className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs transition-colors"
+                                >
+                                  {copiedSection === section.id ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                                </motion.button>
+                              </div>
+                              
+                              <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50 mb-2">
+                                {isEditMode ? (
+                                  <EditableText
+                                    value={section.content}
+                                    onChange={(v) => updateScriptBodySection(section.id, { content: v })}
+                                    multiline
+                                    className="text-slate-300 text-sm leading-relaxed min-h-[80px]"
+                                    placeholder="输入分论点内容..."
+                                  />
+                                ) : (
+                                  <p className="text-slate-300 text-sm leading-relaxed whitespace-pre-wrap">{section.content}</p>
+                                )}
+                              </div>
+                              
+                              {section.goldenQuote && (
+                                <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                                  <Quote className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                                  {isEditMode ? (
+                                    <EditableText
+                                      value={section.goldenQuote}
+                                      onChange={(v) => updateScriptBodySection(section.id, { goldenQuote: v })}
+                                      className="text-sm text-amber-200 italic flex-1"
+                                      placeholder="金句"
+                                    />
+                                  ) : (
+                                    <p className="text-sm text-amber-200 italic">{section.goldenQuote}</p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+
+                {(activeTab === 'full' || activeTab === 'quotes') && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                    className="mb-6"
+                  >
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+                        <Quote className="w-4 h-4 text-white" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-white">金句推荐</h3>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {scriptFramework.goldenQuotes.map((quote, index) => (
+                        <motion.div
+                          key={quote.id}
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 0.5 + index * 0.1 }}
+                          className="relative group"
+                        >
+                          <div className="p-4 rounded-xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20 hover:border-amber-500/40 transition-colors">
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                {isEditMode ? (
+                                  <EditableText
+                                    value={quote.type}
+                                    onChange={(v) => updateScriptGoldenQuote(quote.id, { type: v })}
+                                    className="px-2 py-0.5 rounded-md bg-amber-500/20 text-xs text-amber-300 w-20"
+                                    placeholder="类型"
+                                  />
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-xs text-amber-300">{quote.type}</span>
+                                )}
+                                {isEditMode ? (
+                                  <EditableText
+                                    value={quote.position}
+                                    onChange={(v) => updateScriptGoldenQuote(quote.id, { position: v })}
+                                    className="text-xs text-slate-500 w-24 bg-transparent"
+                                    placeholder="位置"
+                                  />
+                                ) : (
+                                  <span className="text-xs text-slate-500">{quote.position}</span>
+                                )}
+                              </div>
+                              <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => handleCopy(quote.content, quote.id)}
+                                className="opacity-0 group-hover:opacity-100 flex items-center gap-1 px-2 py-1 rounded-md bg-slate-800 text-slate-400 text-xs transition-all"
+                              >
+                                {copiedSection === quote.id ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                              </motion.button>
+                            </div>
+                            {isEditMode ? (
+                              <EditableText
+                                value={quote.content}
+                                onChange={(v) => updateScriptGoldenQuote(quote.id, { content: v })}
+                                className="text-amber-100 italic"
+                                placeholder="金句内容"
+                              />
+                            ) : (
+                              <p className="text-amber-100 italic">"{quote.content}"</p>
+                            )}
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+
+                {(activeTab === 'full' || activeTab === 'eggs') && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6 }}
+                    className="mb-6"
+                  >
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center">
+                        <Gift className="w-4 h-4 text-white" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-white">彩蛋规划</h3>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      {scriptFramework.easterEggs.map((egg, index) => (
+                        <motion.div
+                          key={egg.id}
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.7 + index * 0.1 }}
+                          className="p-4 rounded-xl bg-gradient-to-br from-cyan-500/10 to-teal-500/10 border border-cyan-500/20"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center flex-shrink-0">
+                              <span className="text-sm font-bold text-cyan-400">{index + 1}</span>
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                {isEditMode ? (
+                                  <EditableText
+                                    value={egg.type}
+                                    onChange={(v) => updateScriptEasterEgg(egg.id, { type: v })}
+                                    className="px-2 py-0.5 rounded-md bg-cyan-500/20 text-xs text-cyan-300 w-20"
+                                    placeholder="类型"
+                                  />
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded-md bg-cyan-500/20 text-xs text-cyan-300">{egg.type}</span>
+                                )}
+                                {isEditMode ? (
+                                  <EditableText
+                                    value={egg.position}
+                                    onChange={(v) => updateScriptEasterEgg(egg.id, { position: v })}
+                                    className="text-xs text-slate-500 w-24 bg-transparent"
+                                    placeholder="位置"
+                                  />
+                                ) : (
+                                  <span className="text-xs text-slate-500">位置：{egg.position}</span>
+                                )}
+                              </div>
+                              {isEditMode ? (
+                                <EditableText
+                                  value={egg.description}
+                                  onChange={(v) => updateScriptEasterEgg(egg.id, { description: v })}
+                                  className="text-slate-200 text-sm"
+                                  placeholder="彩蛋描述"
+                                />
+                              ) : (
+                                <p className="text-slate-200 text-sm">{egg.description}</p>
+                              )}
+                            </div>
+                            <ChevronRight className="w-5 h-5 text-cyan-400/50" />
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+
+                {(activeTab === 'full' || activeTab === 'hook') && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.8 }}
+                    className="mb-6"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center">
+                          <Bookmark className="w-4 h-4 text-white" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-white">结尾升华</h3>
+                        {isEditMode ? (
+                          <EditableText
+                            value={scriptFramework.ending.duration}
+                            onChange={(v) => updateScriptFramework({ ending: { ...scriptFramework.ending, duration: v } })}
+                            className="text-xs text-slate-500 w-20 bg-transparent"
+                            placeholder="时长"
+                          />
+                        ) : (
+                          <span className="text-xs text-slate-500">{scriptFramework.ending.duration}</span>
+                        )}
+                      </div>
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => handleCopy(scriptFramework.ending.content + '\n\n' + scriptFramework.ending.callToAction, 'ending')}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 text-sm transition-colors"
+                      >
+                        {copiedSection === 'ending' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                        {copiedSection === 'ending' ? '已复制' : '复制'}
+                      </motion.button>
+                    </div>
+                    <div className="p-5 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-green-500/10 border border-emerald-500/20">
+                      {isEditMode ? (
+                        <EditableText
+                          value={scriptFramework.ending.content}
+                          onChange={(v) => updateScriptFramework({ ending: { ...scriptFramework.ending, content: v } })}
+                          multiline
+                          className="text-slate-200 leading-relaxed min-h-[80px] mb-3"
+                          placeholder="输入结尾升华内容..."
+                        />
+                      ) : (
+                        <p className="text-slate-200 leading-relaxed mb-3 whitespace-pre-wrap">{scriptFramework.ending.content}</p>
+                      )}
+                      <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                        {isEditMode ? (
+                          <div className="flex flex-col gap-1">
+                            <span className="font-medium text-emerald-300 text-sm">互动引导：</span>
+                            <EditableText
+                              value={scriptFramework.ending.callToAction}
+                              onChange={(v) => updateScriptFramework({ ending: { ...scriptFramework.ending, callToAction: v } })}
+                              className="text-sm text-emerald-200"
+                              placeholder="互动引导"
+                            />
+                          </div>
+                        ) : (
+                          <p className="text-sm text-emerald-200">
+                            <span className="font-medium">互动引导：</span>{scriptFramework.ending.callToAction}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.9 }}
+                  className="flex justify-center gap-4 pt-6 border-t border-slate-800"
+                >
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setShowShareModal(true)}
+                    className="flex items-center gap-2 px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+                  >
+                    <Share2 className="w-4 h-4" />
+                    分享方案
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => handleCopy(getFullScriptMarkdown(), 'full', true)}
+                    className={cn(
+                      "flex items-center gap-2 px-6 py-3 rounded-xl font-medium",
+                      "bg-gradient-to-r from-violet-500 to-purple-600 text-white",
+                      "hover:from-violet-600 hover:to-purple-700 transition-all",
+                      "shadow-lg shadow-violet-500/30 hover:shadow-violet-500/50"
+                    )}
+                  >
+                    {copiedSection === 'full' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    {copiedSection === 'full' ? '已复制全部' : '复制完整脚本'}
+                  </motion.button>
+                </motion.div>
+              </>
+            )}
           </div>
         ) : (
           <motion.div
@@ -651,13 +927,15 @@ export default function ScriptPage() {
                 whileTap={{ scale: 0.98 }}
                 onClick={() => {
                   if (!scriptFramework) return;
-                  const blob = new Blob([getFullScriptText()], { type: 'text/plain' });
+                  const markdown = getFullScriptMarkdown();
+                  const blob = new Blob([markdown], { type: 'text/markdown' });
                   const url = URL.createObjectURL(blob);
                   const a = document.createElement('a');
                   a.href = url;
-                  a.download = `${scriptFramework.title}.txt`;
+                  a.download = `${scriptFramework.title}.md`;
                   a.click();
                   URL.revokeObjectURL(url);
+                  showToast('Markdown 文件已下载', 'success');
                 }}
                 className="w-full flex items-center gap-3 p-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-left transition-colors"
               >
@@ -665,8 +943,28 @@ export default function ScriptPage() {
                   <Download className="w-5 h-5 text-cyan-400" />
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium text-white">下载脚本文件</p>
-                  <p className="text-xs text-slate-400">导出为 TXT 文件保存</p>
+                  <p className="font-medium text-white">下载 Markdown 文件</p>
+                  <p className="text-xs text-slate-400">导出为 .md 文件，保留格式</p>
+                </div>
+              </motion.button>
+
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => {
+                  if (!scriptFramework) return;
+                  const markdown = getFullScriptMarkdown();
+                  handleCopy(markdown, 'share-rich', true);
+                  setShowShareModal(false);
+                }}
+                className="w-full flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-violet-500/20 to-purple-500/20 border border-violet-500/30 hover:bg-slate-700 text-left transition-colors"
+              >
+                <div className="w-10 h-10 rounded-lg bg-violet-500/30 flex items-center justify-center">
+                  <Copy className="w-5 h-5 text-violet-300" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium text-white">复制带样式 Markdown</p>
+                  <p className="text-xs text-slate-400">粘贴到文档中保留格式样式</p>
                 </div>
               </motion.button>
             </div>

@@ -28,13 +28,97 @@ export const copyToClipboard = async (text: string): Promise<CopyResult> => {
       } else {
         return { success: false, error: '复制命令执行失败' };
       }
-    } catch (execError) {
+    } catch {
       document.body.removeChild(textArea);
       return { success: false, error: '复制命令执行异常' };
     }
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : '未知错误' };
   }
+};
+
+export const copyRichTextToClipboard = async (
+  markdown: string,
+  html?: string
+): Promise<CopyResult> => {
+  try {
+    const htmlContent = html || markdownToHtml(markdown);
+    
+    if (navigator.clipboard && window.isSecureContext && ClipboardItem) {
+      const clipboardItem = new ClipboardItem({
+        'text/plain': new Blob([markdown], { type: 'text/plain' }),
+        'text/html': new Blob([htmlContent], { type: 'text/html' }),
+      });
+      await navigator.clipboard.write([clipboardItem]);
+      return { success: true };
+    }
+    
+    const fallbackResult = await copyRichTextFallback(markdown, htmlContent);
+    if (fallbackResult.success) {
+      return { success: true };
+    }
+    
+    return await copyToClipboard(markdown);
+  } catch {
+    return await copyToClipboard(markdown);
+  }
+};
+
+const copyRichTextFallback = async (
+  markdown: string,
+  html: string
+): Promise<CopyResult> => {
+  return new Promise((resolve) => {
+    const container = document.createElement('div');
+    container.innerHTML = html;
+    container.style.position = 'fixed';
+    container.style.left = '-999999px';
+    container.style.top = '-999999px';
+    container.style.whiteSpace = 'pre-wrap';
+    document.body.appendChild(container);
+    
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(container);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    
+    try {
+      const successful = document.execCommand('copy');
+      selection?.removeAllRanges();
+      document.body.removeChild(container);
+      
+      if (successful) {
+        resolve({ success: true });
+      } else {
+        resolve({ success: false, error: '复制命令执行失败' });
+      }
+    } catch {
+      selection?.removeAllRanges();
+      document.body.removeChild(container);
+      resolve({ success: false, error: '复制命令执行异常' });
+    }
+  });
+};
+
+export const markdownToHtml = (markdown: string): string => {
+  let html = markdown
+    .replace(/^### (.*$)/gim, '<h3 style="font-size: 1.25rem; font-weight: 600; color: #1e293b; margin: 1rem 0 0.5rem 0;">$1</h3>')
+    .replace(/^## (.*$)/gim, '<h2 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin: 1.5rem 0 0.75rem 0;">$1</h2>')
+    .replace(/^# (.*$)/gim, '<h1 style="font-size: 1.875rem; font-weight: 700; color: #0f172a; margin: 2rem 0 1rem 0;">$1</h1>')
+    .replace(/\*\*(.*)\*\*/gim, '<strong style="font-weight: 600;">$1</strong>')
+    .replace(/\*(.*)\*/gim, '<em style="font-style: italic;">$1</em>')
+    .replace(/`([^`]+)`/gim, '<code style="background: #f1f5f9; padding: 0.125rem 0.375rem; border-radius: 0.25rem; font-family: monospace; font-size: 0.875em;">$1</code>')
+    .replace(/^> (.*$)/gim, '<blockquote style="border-left: 4px solid #8b5cf6; padding-left: 1rem; margin: 1rem 0; color: #475569; font-style: italic;">$1</blockquote>')
+    .replace(/^- \[(.*)\] (.*)$/gim, '<li style="margin: 0.5rem 0;"><span style="color: #8b5cf6; font-weight: 500;">[$1]</span> $2</li>')
+    .replace(/^- (.*$)/gim, '<li style="margin: 0.5rem 0;">$1</li>')
+    .replace(/^\d+\. (.*$)/gim, '<li style="margin: 0.5rem 0;">$1</li>')
+    .replace(/\n\n/gim, '</p><p style="margin: 0.75rem 0; line-height: 1.75;">')
+    .replace(/\n/gim, '<br>');
+  
+  html = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 14px; line-height: 1.75; color: #1e293b; max-width: 800px;"><p style="margin: 0.75rem 0; line-height: 1.75;">${html}</p></div>`;
+  
+  return html;
 };
 
 export const showToast = (message: string, type: 'success' | 'error' = 'success') => {

@@ -33,6 +33,10 @@ interface AppState {
   generateTopicsForHotSpot: (hotSpotId: string) => void;
   generateTitlesForTopic: (topicId: string, regenerate?: boolean) => void;
   generateScriptForTopic: (topicId: string, regenerate?: boolean) => void;
+  updateScriptFramework: (updates: Partial<ScriptFramework>) => void;
+  updateScriptBodySection: (sectionId: string, updates: Partial<ScriptFramework['body'][0]>) => void;
+  updateScriptGoldenQuote: (quoteId: string, updates: Partial<ScriptFramework['goldenQuotes'][0]>) => void;
+  updateScriptEasterEgg: (eggId: string, updates: Partial<ScriptFramework['easterEggs'][0]>) => void;
   clearSelectedTitles: () => void;
   navigateToNextStep: () => void;
   toggleFavorite: (hotSpotId: string) => void;
@@ -119,6 +123,47 @@ export const useAppStore = create<AppState>((set, get) => ({
   generateScriptForTopic: (topicId, regenerate = false) => {
     const script = generateScript(topicId, regenerate);
     set({ scriptFramework: script });
+  },
+
+  updateScriptFramework: (updates) => {
+    const { scriptFramework } = get();
+    if (!scriptFramework) return;
+    set({
+      scriptFramework: { ...scriptFramework, ...updates },
+    });
+  },
+
+  updateScriptBodySection: (sectionId, updates) => {
+    const { scriptFramework } = get();
+    if (!scriptFramework) return;
+    const updatedBody = scriptFramework.body.map((section) =>
+      section.id === sectionId ? { ...section, ...updates } : section
+    );
+    set({
+      scriptFramework: { ...scriptFramework, body: updatedBody },
+    });
+  },
+
+  updateScriptGoldenQuote: (quoteId, updates) => {
+    const { scriptFramework } = get();
+    if (!scriptFramework) return;
+    const updatedQuotes = scriptFramework.goldenQuotes.map((quote) =>
+      quote.id === quoteId ? { ...quote, ...updates } : quote
+    );
+    set({
+      scriptFramework: { ...scriptFramework, goldenQuotes: updatedQuotes },
+    });
+  },
+
+  updateScriptEasterEgg: (eggId, updates) => {
+    const { scriptFramework } = get();
+    if (!scriptFramework) return;
+    const updatedEggs = scriptFramework.easterEggs.map((egg) =>
+      egg.id === eggId ? { ...egg, ...updates } : egg
+    );
+    set({
+      scriptFramework: { ...scriptFramework, easterEggs: updatedEggs },
+    });
   },
   
   clearSelectedTitles: () => set({ selectedTitles: [] }),
