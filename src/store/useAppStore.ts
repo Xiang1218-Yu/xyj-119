@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { HotSpot, UserProfile, TopicSuggestion, TitleVariant, ScriptFramework } from '@/types';
-import { mockHotSpots, mockUserProfile, generateTopics, generateTitles, generateScript, refreshHotSpots } from '@/data/mockData';
+import { HotSpot, UserProfile, TopicSuggestion, TitleVariant, ScriptFramework, InspirationCombination, InspirationDimension, InspirationItem } from '@/types';
+import { mockHotSpots, mockUserProfile, generateTopics, generateTitles, generateScript, refreshHotSpots, getRandomInspirationItem } from '@/data/mockData';
 
 interface AppState {
   userProfile: UserProfile;
@@ -11,12 +11,16 @@ interface AppState {
   titleVariants: TitleVariant[];
   selectedTitles: TitleVariant[];
   scriptFramework: ScriptFramework | null;
-  currentPage: 'hotspot' | 'topic' | 'title' | 'script' | 'profile';
+  currentPage: 'hotspot' | 'topic' | 'title' | 'script' | 'inspiration' | 'profile';
   selectedPlatform: string | null;
   sortBy: 'heat' | 'match' | 'time';
   isRefreshing: boolean;
   favoriteIds: string[];
   scrollToHotSpotId: string | null;
+  currentInspiration: InspirationCombination | null;
+  favoriteInspirations: InspirationCombination[];
+  lockedDimensions: Record<InspirationDimension, boolean>;
+  isRollingInspiration: boolean;
   
   setSelectedHotSpot: (hotspot: HotSpot | null) => void;
   setSelectedTopic: (topic: TopicSuggestion | null) => void;
@@ -34,6 +38,11 @@ interface AppState {
   toggleFavorite: (hotSpotId: string) => void;
   isFavorite: (hotSpotId: string) => boolean;
   setScrollToHotSpotId: (id: string | null) => void;
+  rollInspiration: () => void;
+  toggleDimensionLock: (dimension: InspirationDimension) => void;
+  toggleInspirationFavorite: (inspirationId: string) => void;
+  removeFavoriteInspiration: (inspirationId: string) => void;
+  generateInspirationCombination: () => InspirationCombination;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -51,6 +60,16 @@ export const useAppStore = create<AppState>((set, get) => ({
   isRefreshing: false,
   favoriteIds: [],
   scrollToHotSpotId: null,
+  currentInspiration: null,
+  favoriteInspirations: [],
+  lockedDimensions: {
+    scene: false,
+    emotion: false,
+    style: false,
+    audience: false,
+    format: false,
+  },
+  isRollingInspiration: false,
 
   setSelectedHotSpot: (hotspot) => set({ selectedHotSpot: hotspot }),
   setSelectedTopic: (topic) => set({ selectedTopic: topic }),
@@ -137,6 +156,127 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   setScrollToHotSpotId: (id) => set({ scrollToHotSpotId: id }),
+
+  generateInspirationCombination: () => {
+    const { lockedDimensions, currentInspiration } = get();
+    const dimensions: InspirationDimension[] = ['scene', 'emotion', 'style', 'audience', 'format'];
+    
+    const combination: Partial<InspirationCombination> = {};
+    
+    dimensions.forEach(dim => {
+      if (lockedDimensions[dim] && currentInspiration) {
+        combination[dim] = currentInspiration[dim];
+      } else {
+        combination[dim] = getRandomInspirationItem(dim);
+      }
+    });
+    
+    return {
+      id: `inspiration-${Date.now()}`,
+      scene: combination.scene!,
+      emotion: combination.emotion!,
+      style: combination.style!,
+      audience: combination.audience!,
+      format: combination.format!,
+      createdAt: Date.now(),
+      isFavorite: false,
+    };
+  },
+
+  rollInspiration: async () => {
+    set({ isRollingInspiration: true });
+    
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    const newCombination = get().generateInspirationCombination();
+    set({ 
+      currentInspiration: newCombination,
+      isRollingInspiration: false 
+    });
+  },
+
+  toggleDimensionLock: (dimension) => {
+    const { lockedDimensions } = get();
+    set({
+      lockedDimensions: {
+        ...lockedDimensions,
+        [dimension]: !lockedDimensions[dimension],
+      },
+    });
+  },
+
+  toggleInspirationFavorite: (inspirationId) => {
+    const { favoriteInspirations, currentInspiration } = get();
+    
+    if (currentInspiration && currentInspiration.id === inspirationId) {
+      const isFavorited = currentInspiration.isFavorite;
+      const updatedInspiration = {
+        ...currentInspiration,
+        isFavorite: !isFavorited,
+      };
+      
+      let newFavorites: InspirationCombination[];
+      if (isFavorited) {
+        newFavorites = favoriteInspirations.filter(f => f.id !== inspirationId);
+      } else {
+        newFavorites = [...favoriteInspirations, updatedInspiration];
+      }
+      
+      set({
+        currentInspiration: updatedInspiration,
+        favoriteInspirations: newFavorites,
+      });
+      
+      try {
+        localStorage.setItem('favoriteInspirations', JSON.stringify(newFavorites));
+      } catch (e) {
+        console.warn('Failed to save inspiration favorites to localStorage');
+      }
+    } else {
+      const isFavorited = favoriteInspirations.some(f => f.id === inspirationId);
+      let newFavorites: InspirationCombination[];
+      
+      if (isFavorited) {
+        newFavorites = favoriteInspirations.filter(f => f.id !== inspirationId);
+      } else {
+        const favToUpdate = favoriteInspirations.find(f => f.id === inspirationId);
+        if (favToUpdate) {
+          newFavorites = [...favoriteInspirations, { ...favToUpdate, isFavorite: true }];
+        } else {
+          newFavorites = favoriteInspirations;
+        }
+      }
+      
+      set({ favoriteInspirations: newFavorites });
+      
+      try {
+        localStorage.setItem('favoriteInspirations', JSON.stringify(newFavorites));
+      } catch (e) {
+        console.warn('Failed to save inspiration favorites to localStorage');
+      }
+    }
+  },
+
+  removeFavoriteInspiration: (inspirationId) => {
+    const { favoriteInspirations, currentInspiration } = get();
+    const newFavorites = favoriteInspirations.filter(f => f.id !== inspirationId);
+    
+    let updatedCurrent = currentInspiration;
+    if (currentInspiration && currentInspiration.id === inspirationId) {
+      updatedCurrent = { ...currentInspiration, isFavorite: false };
+    }
+    
+    set({
+      favoriteInspirations: newFavorites,
+      currentInspiration: updatedCurrent,
+    });
+    
+    try {
+      localStorage.setItem('favoriteInspirations', JSON.stringify(newFavorites));
+    } catch (e) {
+      console.warn('Failed to save inspiration favorites to localStorage');
+    }
+  },
 }));
 
 const loadSavedProfile = () => {
@@ -165,3 +305,17 @@ const loadSavedFavorites = () => {
 
 loadSavedProfile();
 loadSavedFavorites();
+
+const loadSavedInspirationFavorites = () => {
+  try {
+    const saved = localStorage.getItem('favoriteInspirations');
+    if (saved) {
+      const favoriteInspirations = JSON.parse(saved);
+      useAppStore.setState({ favoriteInspirations });
+    }
+  } catch (e) {
+    console.warn('Failed to load inspiration favorites from localStorage');
+  }
+};
+
+loadSavedInspirationFavorites();

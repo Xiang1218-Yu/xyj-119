@@ -5,6 +5,7 @@ import TopicPage from '@/pages/TopicPage';
 import TitlePage from '@/pages/TitlePage';
 import ScriptPage from '@/pages/ScriptPage';
 import ProfilePage from '@/pages/ProfilePage';
+import InspirationPage from '@/pages/InspirationPage';
 import { AnimatePresence, motion } from 'framer-motion';
 
 export default function App() {
@@ -14,6 +15,8 @@ export default function App() {
     switch (currentPage) {
       case 'hotspot':
         return <HotSpotPage />;
+      case 'inspiration':
+        return <InspirationPage />;
       case 'topic':
         return <TopicPage />;
       case 'title':

@@ -1,4 +1,4 @@
-import { HotSpot, UserProfile, TopicSuggestion, TitleVariant, ScriptFramework } from '@/types';
+import { HotSpot, UserProfile, TopicSuggestion, TitleVariant, ScriptFramework, InspirationItem, InspirationDimension, InspirationDimensionData } from '@/types';
 
 export const mockUserProfile: UserProfile = {
   id: '1',
@@ -1068,4 +1068,130 @@ export const generateScript = (topicId: string, regenerate = false): ScriptFrame
     goldenQuotes: newQuotes,
     easterEggs: newEggs,
   };
+};
+
+export const inspirationDimensions: Record<InspirationDimension, InspirationDimensionData> = {
+  scene: {
+    id: 'scene',
+    name: '创作场景',
+    icon: 'MapPin',
+    color: 'from-violet-500 to-purple-600',
+  },
+  emotion: {
+    id: 'emotion',
+    name: '情感基调',
+    icon: 'Heart',
+    color: 'from-pink-500 to-rose-600',
+  },
+  style: {
+    id: 'style',
+    name: '内容风格',
+    icon: 'Palette',
+    color: 'from-amber-500 to-orange-600',
+  },
+  audience: {
+    id: 'audience',
+    name: '目标受众',
+    icon: 'Users',
+    color: 'from-emerald-500 to-teal-600',
+  },
+  format: {
+    id: 'format',
+    name: '内容形式',
+    icon: 'FileText',
+    color: 'from-blue-500 to-indigo-600',
+  },
+};
+
+export const inspirationPool: Record<InspirationDimension, InspirationItem[]> = {
+  scene: [
+    { id: 's1', text: '深夜加班的办公室', description: '都市年轻人的奋斗日常', tags: ['职场', '奋斗', '都市'] },
+    { id: 's2', text: '周末的咖啡馆', description: '悠闲时光中的思考', tags: ['生活', '文艺', '休闲'] },
+    { id: 's3', text: '春运回家的火车', description: '中国人的集体记忆', tags: ['亲情', '乡愁', '社会'] },
+    { id: 's4', text: '毕业十年的同学会', description: '时光荏苒的感慨', tags: ['青春', '回忆', '成长'] },
+    { id: 's5', text: '第一次租房的小窝', description: '北漂沪漂的起点', tags: ['漂泊', '独立', '生活'] },
+    { id: 's6', text: '凌晨三点的医院走廊', description: '生命与健康的思考', tags: ['健康', '亲情', '感悟'] },
+    { id: 's7', text: '双十一的快递驿站', description: '消费时代的缩影', tags: ['消费', '社会', '热点'] },
+    { id: 's8', text: '高考后的校园', description: '青春的告别与开始', tags: ['青春', '教育', '成长'] },
+    { id: 's9', text: '裁员后的公司会议室', description: '职场人的焦虑与重生', tags: ['职场', '焦虑', '转型'] },
+    { id: 's10', text: '相亲角的父母们', description: '两代人的婚恋观念碰撞', tags: ['婚恋', '家庭', '社会'] },
+    { id: 's11', text: '直播间的主播日常', description: '新媒体时代的职业', tags: ['新媒体', '职业', '互联网'] },
+    { id: 's12', text: '城中村的出租屋', description: '大城市的追梦人', tags: ['奋斗', '城市', '梦想'] },
+    { id: 's13', text: '养老院的春节', description: '老龄化社会的缩影', tags: ['养老', '亲情', '社会'] },
+    { id: 's14', text: '创业公司的茶水间', description: '梦想与现实的碰撞', tags: ['创业', '梦想', '职场'] },
+    { id: 's15', text: '地铁站的早高峰', description: '都市人的日常奔波', tags: ['都市', '生活', '通勤'] },
+  ],
+  emotion: [
+    { id: 'e1', text: '温暖治愈', description: '让人感到人间值得', tags: ['温暖', '治愈', '正能量'] },
+    { id: 'e2', text: '扎心共鸣', description: '一句话戳中泪点', tags: ['共鸣', '情感', '真实'] },
+    { id: 'e3', text: '热血励志', description: '看完想立刻去奋斗', tags: ['励志', '热血', '奋斗'] },
+    { id: 'e4', text: '幽默反讽', description: '笑着笑着就沉默了', tags: ['幽默', '反讽', '搞笑'] },
+    { id: 'e5', text: '深度焦虑', description: '当代人的集体困境', tags: ['焦虑', '深度', '思考'] },
+    { id: 'e6', text: ' nostalgic 怀旧', description: '8090后的集体回忆', tags: ['怀旧', '青春', '回忆'] },
+    { id: 'e7', text: '爽感逆袭', description: '小人物的高光时刻', tags: ['逆袭', '爽文', '励志'] },
+    { id: 'e8', text: '细思极恐', description: '生活中的恐怖真相', tags: ['深度', '思考', '社会'] },
+    { id: 'e9', text: '感动泪目', description: '看哭了无数人', tags: ['感动', '泪目', '亲情'] },
+    { id: 'e10', text: '愤怒不平', description: '不吐不快的社会现象', tags: ['愤怒', '社会', '批判'] },
+    { id: 'e11', text: '轻松愉悦', description: '看完心情变好', tags: ['轻松', '愉悦', '快乐'] },
+    { id: 'e12', text: '迷茫困惑', description: '年轻人的十字路口', tags: ['迷茫', '成长', '选择'] },
+    { id: 'e13', text: '骄傲自豪', description: '作为中国人的底气', tags: ['爱国', '自豪', '正能量'] },
+    { id: 'e14', text: '心酸无奈', description: '成年人的崩溃瞬间', tags: ['心酸', '无奈', '成人世界'] },
+    { id: 'e15', text: '释然放下', description: '与自己和解的智慧', tags: ['释然', '放下', '智慧'] },
+  ],
+  style: [
+    { id: 'st1', text: '干货科普', description: '实用知识分享', tags: ['干货', '科普', '实用'] },
+    { id: 'st2', text: '故事叙述', description: '用故事打动人心', tags: ['故事', '叙事', '情感'] },
+    { id: 'st3', text: '观点评论', description: '鲜明的个人观点', tags: ['观点', '评论', '犀利'] },
+    { id: 'st4', text: '对比反差', description: '没有对比就没有伤害', tags: ['对比', '反差', '冲击'] },
+    { id: 'st5', text: '数据说话', description: '用数据揭示真相', tags: ['数据', '深度', '专业'] },
+    { id: 'st6', text: '个人经历', description: '第一人称真实分享', tags: ['真实', '经历', '个人'] },
+    { id: 'st7', text: '盘点总结', description: '一网打尽式盘点', tags: ['盘点', '总结', '清单'] },
+    { id: 'st8', text: '深度解析', description: '透过现象看本质', tags: ['深度', '解析', '思考'] },
+    { id: 'st9', text: '干货教程', description: '手把手教学', tags: ['教程', '实用', '技能'] },
+    { id: 'st10', text: '话题讨论', description: '引发读者参与', tags: ['讨论', '互动', '话题'] },
+    { id: 'st11', text: '金句集锦', description: '每一句都想收藏', tags: ['金句', '文案', '收藏'] },
+    { id: 'st12', text: '漫画图解', description: '一图胜千言', tags: ['漫画', '图解', '视觉'] },
+    { id: 'st13', text: '访谈对话', description: '听听别人怎么说', tags: ['访谈', '对话', '人物'] },
+    { id: 'st14', text: '时间线梳理', description: '来龙去脉一目了然', tags: ['时间线', '梳理', '逻辑'] },
+    { id: 'st15', text: '避坑指南', description: '前人踩过的坑', tags: ['避坑', '指南', '经验'] },
+  ],
+  audience: [
+    { id: 'a1', text: '刚毕业的00后', description: '职场新新人', tags: ['00后', '职场新人', '毕业生'] },
+    { id: 'a2', text: '30+已婚女性', description: '家庭事业双重压力', tags: ['30+', '女性', '婚姻'] },
+    { id: 'a3', text: '一线城市打拼者', description: '北漂沪漂深漂', tags: ['北漂', '沪漂', '一线城市'] },
+    { id: 'a4', text: '焦虑的父母', description: '育儿教育的烦恼', tags: ['父母', '育儿', '教育'] },
+    { id: 'a5', text: '创业者/自由职业', description: '不安分的灵魂', tags: ['创业', '自由职业', '梦想'] },
+    { id: 'a6', text: '考研/考公大军', description: '千军万马过独木桥', tags: ['考研', '考公', '考试'] },
+    { id: 'a7', text: '互联网从业者', description: '996的主力军', tags: ['互联网', '程序员', '996'] },
+    { id: 'a8', text: '单身青年', description: '一人吃饱全家不饿', tags: ['单身', '青年', '独居'] },
+    { id: 'a9', text: '二胎家庭', description: '甜蜜的负担', tags: ['二胎', '家庭', '育儿'] },
+    { id: 'a10', text: '退休银发族', description: '新的人生阶段', tags: ['退休', '银发', '老年'] },
+    { id: 'a11', text: '斜杠青年', description: '多重身份的探索者', tags: ['斜杠', '青年', '副业'] },
+    { id: 'a12', text: '全职妈妈', description: '最辛苦的职业', tags: ['全职妈妈', '家庭', '育儿'] },
+    { id: 'a13', text: 'Z世代大学生', description: '互联网原住民', tags: ['Z世代', '大学生', '年轻'] },
+    { id: 'a14', text: '中年职场人', description: '上有老下有小', tags: ['中年', '职场', '压力'] },
+    { id: 'a15', text: '自媒体创作者', description: '内容生产主力军', tags: ['自媒体', '创作', '内容'] },
+  ],
+  format: [
+    { id: 'f1', text: '短视频脚本', description: '15-60秒黄金时长', tags: ['短视频', '抖音', '快手'] },
+    { id: 'f2', text: '小红书笔记', description: '种草图文首选', tags: ['小红书', '图文', '种草'] },
+    { id: 'f3', text: '公众号长文', description: '深度内容平台', tags: ['公众号', '长文', '深度'] },
+    { id: 'f4', text: '微博热搜文案', description: '140字的艺术', tags: ['微博', '热搜', '话题'] },
+    { id: 'f5', text: '知乎问答', description: '专业知识分享', tags: ['知乎', '问答', '专业'] },
+    { id: 'f6', text: 'B站视频文案', description: '年轻人的文化社区', tags: ['B站', '视频', '二次元'] },
+    { id: 'f7', text: '朋友圈文案', description: '人设打造神器', tags: ['朋友圈', '文案', '社交'] },
+    { id: 'f8', text: '播客节目', description: '耳朵的盛宴', tags: ['播客', '音频', '陪伴'] },
+    { id: 'f9', text: '直播脚本', description: '实时互动内容', tags: ['直播', '互动', '带货'] },
+    { id: 'f10', text: '条漫脚本', description: '读图时代首选', tags: ['条漫', '漫画', '视觉'] },
+    { id: 'f11', text: '系列连载', description: '追剧式内容', tags: ['连载', '系列', '故事'] },
+    { id: 'f12', text: '干货清单', description: '收藏即正义', tags: ['清单', '干货', '收藏'] },
+    { id: 'f13', text: '人物专访', description: '讲述别人的故事', tags: ['人物', '专访', '故事'] },
+    { id: 'f14', text: '热点评论', description: '追热点必备', tags: ['热点', '评论', '时事'] },
+    { id: 'f15', text: '教程攻略', description: '实用价值拉满', tags: ['教程', '攻略', '技能'] },
+  ],
+};
+
+export const getRandomInspirationItem = (dimension: InspirationDimension): InspirationItem => {
+  const items = inspirationPool[dimension];
+  return items[Math.floor(Math.random() * items.length)];
 };

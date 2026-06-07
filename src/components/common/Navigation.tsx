@@ -1,10 +1,11 @@
 import { motion } from 'framer-motion';
-import { Flame, Lightbulb, FileText, Scroll, User } from 'lucide-react';
+import { Flame, Lightbulb, FileText, Scroll, User, Sparkles } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { id: 'hotspot', label: '热点追踪', icon: Flame },
+  { id: 'inspiration', label: '灵感抽取', icon: Sparkles },
   { id: 'topic', label: '选题生成', icon: Lightbulb },
   { id: 'title', label: '标题优化', icon: FileText },
   { id: 'script', label: '脚本框架', icon: Scroll },

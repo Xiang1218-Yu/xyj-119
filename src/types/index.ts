@@ -90,3 +90,37 @@ export interface ScriptFramework {
   };
   totalDuration: string;
 }
+
+export type InspirationDimension = 'scene' | 'emotion' | 'style' | 'audience' | 'format';
+
+export interface InspirationDimensionData {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+}
+
+export interface InspirationItem {
+  id: string;
+  text: string;
+  description?: string;
+  tags?: string[];
+}
+
+export interface InspirationCombination {
+  id: string;
+  scene: InspirationItem;
+  emotion: InspirationItem;
+  style: InspirationItem;
+  audience: InspirationItem;
+  format: InspirationItem;
+  createdAt: number;
+  isFavorite: boolean;
+}
+
+export interface InspirationState {
+  currentCombination: InspirationCombination | null;
+  favoriteCombinations: InspirationCombination[];
+  lockedDimensions: Record<InspirationDimension, boolean>;
+  isRolling: boolean;
+}
