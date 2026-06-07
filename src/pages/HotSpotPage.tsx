@@ -27,7 +27,9 @@ export default function HotSpotPage() {
     setSelectedPlatform,
     sortBy, 
     setSortBy,
-    selectedHotSpot 
+    selectedHotSpot,
+    isRefreshing,
+    refreshHotSpotList
   } = useAppStore();
 
   const filteredHotSpots = hotSpots
@@ -63,10 +65,12 @@ export default function HotSpotPage() {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+              onClick={refreshHotSpotList}
+              disabled={isRefreshing}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <RefreshCw className="w-4 h-4" />
-              <span className="text-sm">刷新热点</span>
+              <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
+              <span className="text-sm">{isRefreshing ? "刷新中..." : "刷新热点"}</span>
             </motion.button>
           </div>
 

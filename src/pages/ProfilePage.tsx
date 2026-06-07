@@ -1,8 +1,8 @@
 import { motion } from 'framer-motion';
-import { User, Target, Users, Palette, Globe, Save, Check, X } from 'lucide-react';
+import { User, Target, Users, Palette, Globe, Save, Check } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const domainOptions = [
   '职场', '职业发展', '个人成长', '科技', '美妆', '时尚',
@@ -24,7 +24,7 @@ const platformOptions = [
 ];
 
 export default function ProfilePage() {
-  const { userProfile } = useAppStore();
+  const { userProfile, updateUserProfile } = useAppStore();
   const [saved, setSaved] = useState(false);
   
   const [formData, setFormData] = useState({
@@ -34,6 +34,16 @@ export default function ProfilePage() {
     style: [...userProfile.style],
     platform: [...userProfile.platform],
   });
+
+  useEffect(() => {
+    setFormData({
+      name: userProfile.name,
+      domain: [...userProfile.domain],
+      audience: [...userProfile.audience],
+      style: [...userProfile.style],
+      platform: [...userProfile.platform],
+    });
+  }, [userProfile]);
 
   const handleToggle = (field: 'domain' | 'audience' | 'style' | 'platform', value: string) => {
     setFormData(prev => {
@@ -49,6 +59,13 @@ export default function ProfilePage() {
   };
 
   const handleSave = () => {
+    updateUserProfile({
+      name: formData.name,
+      domain: formData.domain,
+      audience: formData.audience,
+      style: formData.style,
+      platform: formData.platform,
+    });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };

@@ -4,7 +4,7 @@ import { useAppStore } from '@/store/useAppStore';
 import TitleCard from '@/components/title/TitleCard';
 import RadarChart from '@/components/charts/RadarChart';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const styleFilters = [
   { id: null, label: '全部' },
@@ -29,6 +29,21 @@ export default function TitlePage() {
   
   const [styleFilter, setStyleFilter] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'score' | 'curiosity' | 'emotion' | 'practical' | 'uniqueness'>('score');
+  const [isRegenerating, setIsRegenerating] = useState(false);
+
+  useEffect(() => {
+    if (selectedTopic && titleVariants.length === 0) {
+      generateTitlesForTopic(selectedTopic.id);
+    }
+  }, [selectedTopic, titleVariants.length, generateTitlesForTopic]);
+
+  const handleRegenerate = async () => {
+    if (!selectedTopic || isRegenerating) return;
+    setIsRegenerating(true);
+    await new Promise(resolve => setTimeout(resolve, 500));
+    generateTitlesForTopic(selectedTopic.id, true);
+    setIsRegenerating(false);
+  };
 
   if (!selectedTopic) {
     return (
@@ -54,10 +69,6 @@ export default function TitlePage() {
         </motion.div>
       </div>
     );
-  }
-
-  if (titleVariants.length === 0) {
-    generateTitlesForTopic(selectedTopic.id);
   }
 
   const filteredTitles = titleVariants
@@ -108,11 +119,12 @@ export default function TitlePage() {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => generateTitlesForTopic(selectedTopic.id)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+                onClick={handleRegenerate}
+                disabled={isRegenerating}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <RefreshCw className="w-4 h-4" />
-                <span className="text-sm">重新生成</span>
+                <RefreshCw className={cn("w-4 h-4", isRegenerating && "animate-spin")} />
+                <span className="text-sm">{isRegenerating ? "生成中..." : "重新生成"}</span>
               </motion.button>
             </div>
           </div>

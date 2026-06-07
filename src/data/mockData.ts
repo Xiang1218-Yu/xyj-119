@@ -286,223 +286,372 @@ export const generateTopics = (hotSpotId: string): TopicSuggestion[] => {
   return topics[hotSpotId] || [];
 };
 
-export const generateTitles = (topicId: string): TitleVariant[] => {
-  const titles: Record<string, TitleVariant[]> = {
-    't1-1': [
-      {
-        id: 'title-1',
-        topicId: 't1-1',
-        title: '新人入职的5个加分细节，学会一个都能少走3年弯路',
-        style: 'practical',
-        scores: { curiosity: 75, emotion: 65, practical: 95, uniqueness: 60, overall: 79 },
-        analysis: '强调实用性和价值感，用"少走3年弯路"制造焦虑同时给出解决方案，适合干货类内容。',
-        suggestions: ['可以把"3年"改成具体场景', '数字效果很好，可以保留'],
-      },
-      {
-        id: 'title-2',
-        topicId: 't1-1',
-        title: '00后别再"整顿职场"了！这5件事做到位，领导主动给你加薪',
-        style: 'controversy',
-        scores: { curiosity: 90, emotion: 85, practical: 70, uniqueness: 80, overall: 81 },
-        analysis: '反常规观点制造冲突，用"别再整顿职场"吸引注意力，"主动加薪"给出明确好处。',
-        suggestions: ['开头一定要解释为什么"别再整顿"', '可以加一个真实案例增加可信度'],
-      },
-      {
-        id: 'title-3',
-        topicId: 't1-1',
-        title: '刚入职就被夸"情商高"，我只是做对了这5件小事',
-        style: 'story',
-        scores: { curiosity: 80, emotion: 75, practical: 65, uniqueness: 70, overall: 72 },
-        analysis: '第一人称叙事增加代入感，"被夸情商高"是正向反馈，容易引发读者的模仿欲。',
-        suggestions: ['可以增加具体的对话场景', '结尾可以加一个自己踩过的坑'],
-      },
-      {
-        id: 'title-4',
-        topicId: 't1-1',
-        title: '为什么有的新人入职3个月就转正，有的人半年还在试用期？',
-        style: 'curiosity',
-        scores: { curiosity: 95, emotion: 60, practical: 70, uniqueness: 75, overall: 75 },
-        analysis: '疑问句引发好奇心，对比制造认知冲突，读者会想知道答案而点进来。',
-        suggestions: ['开头可以用一个真实案例引出', '答案要具体可操作'],
-      },
-      {
-        id: 'title-5',
-        topicId: 't1-1',
-        title: '入职第一天我就得罪了同事，后来靠这5个细节扭转了局面',
-        style: 'emotion',
-        scores: { curiosity: 85, emotion: 90, practical: 75, uniqueness: 85, overall: 84 },
-        analysis: '先抑后扬的叙事结构，"得罪同事"制造紧张感，"扭转局面"给出爽点，情绪价值拉满。',
-        suggestions: ['一定要把"得罪同事"的场景写具体', '转折点要突出细节的重要性'],
-      },
-      {
-        id: 'title-6',
-        topicId: 't1-1',
-        title: '新人入职避坑指南：这5个细节没做好，能力再强也白搭',
-        style: 'practical',
-        scores: { curiosity: 70, emotion: 70, practical: 90, uniqueness: 55, overall: 71 },
-        analysis: '"避坑指南"是经典实用类标题模板，"能力再强也白搭"制造焦虑感，促使读者学习。',
-        suggestions: ['可以用反向案例开头', '每个坑配一个真实例子效果更好'],
-      },
-      {
-        id: 'title-7',
-        topicId: 't1-1',
-        title: '领导私下跟我说：职场新人这5个细节，比能力还重要',
-        style: 'curiosity',
-        scores: { curiosity: 92, emotion: 65, practical: 80, uniqueness: 88, overall: 81 },
-        analysis: '"领导私下跟我说"制造独家感和权威性，"比能力还重要"反常识，引发好奇心。',
-        suggestions: ['可以营造一种"内部消息"的感觉', '结尾可以加一个与领导的对话片段'],
-      },
-      {
-        id: 'title-8',
-        topicId: 't1-1',
-        title: '作为一个带过100+新人的leader，我最看重这5个加分细节',
-        style: 'practical',
-        scores: { curiosity: 85, emotion: 60, practical: 92, uniqueness: 75, overall: 78 },
-        analysis: '权威身份背书（带过100+新人）增加内容可信度，"最看重"强调重要性。',
-        suggestions: ['可以增加一个"反面教材"案例', '每个细节解释"为什么重要"'],
-      },
-      {
-        id: 'title-9',
-        topicId: 't1-1',
-        title: '00后新人必看：不想被当成"小孩"，这5件事一定要做到位',
-        style: 'emotion',
-        scores: { curiosity: 80, emotion: 88, practical: 75, uniqueness: 70, overall: 78 },
-        analysis: '精准戳中00后的痛点——不想被轻视，情绪共鸣强，目标用户明确。',
-        suggestions: ['开头可以用一句00后常听到的话引出', "避免说教感，多用'我理解'"],
-      },
-      {
-        id: 'title-10',
-        topicId: 't1-1',
-        title: '同事都夸我"会来事"，其实我只是记住了这5个简单的细节',
-        style: 'story',
-        scores: { curiosity: 75, emotion: 80, practical: 70, uniqueness: 80, overall: 76 },
-        analysis: '"会来事"是一个有争议的标签，"简单的细节"降低学习门槛，读者会想知道到底是什么。',
-        suggestions: ['可以重新定义"会来事"是高情商不是世故', '每个细节配一个具体场景'],
-      },
-      {
-        id: 'title-11',
-        topicId: 't1-1',
-        title: '入职3个月就成了团队核心，这5个细节帮了大忙',
-        style: 'story',
-        scores: { curiosity: 88, emotion: 75, practical: 80, uniqueness: 72, overall: 79 },
-        analysis: '3个月vs团队核心制造强烈对比，结果导向让读者看到学习后的美好前景。',
-        suggestions: ['可以对比入职前和入职3个月的变化', '突出"细节"的决定性作用'],
-      },
-      {
-        id: 'title-12',
-        topicId: 't1-1',
-        title: '职场不是学校，没人会主动教你这些——新人必知的5个潜规则',
-        style: 'controversy',
-        scores: { curiosity: 85, emotion: 75, practical: 85, uniqueness: 65, overall: 78 },
-        analysis: '"潜规则"带有神秘色彩，"没人会主动教你"制造紧迫感和稀缺感。',
-        suggestions: ['把"潜规则"重新定义为"默认共识"', '强调这是保护自己的方式'],
-      },
-    ],
-  };
-
-  return titles[topicId] || [];
+const titleTemplates: Record<string, TitleVariant[]> = {
+  't1-1': [
+    {
+      id: 'title-1',
+      topicId: 't1-1',
+      title: '新人入职的5个加分细节，学会一个都能少走3年弯路',
+      style: 'practical',
+      scores: { curiosity: 75, emotion: 65, practical: 95, uniqueness: 60, overall: 79 },
+      analysis: '强调实用性和价值感，用"少走3年弯路"制造焦虑同时给出解决方案，适合干货类内容。',
+      suggestions: ['可以把"3年"改成具体场景', '数字效果很好，可以保留'],
+    },
+    {
+      id: 'title-2',
+      topicId: 't1-1',
+      title: '00后别再"整顿职场"了！这5件事做到位，领导主动给你加薪',
+      style: 'controversy',
+      scores: { curiosity: 90, emotion: 85, practical: 70, uniqueness: 80, overall: 81 },
+      analysis: '反常规观点制造冲突，用"别再整顿职场"吸引注意力，"主动加薪"给出明确好处。',
+      suggestions: ['开头一定要解释为什么"别再整顿"', '可以加一个真实案例增加可信度'],
+    },
+    {
+      id: 'title-3',
+      topicId: 't1-1',
+      title: '刚入职就被夸"情商高"，我只是做对了这5件小事',
+      style: 'story',
+      scores: { curiosity: 80, emotion: 75, practical: 65, uniqueness: 70, overall: 72 },
+      analysis: '第一人称叙事增加代入感，"被夸情商高"是正向反馈，容易引发读者的模仿欲。',
+      suggestions: ['可以增加具体的对话场景', '结尾可以加一个自己踩过的坑'],
+    },
+    {
+      id: 'title-4',
+      topicId: 't1-1',
+      title: '为什么有的新人入职3个月就转正，有的人半年还在试用期？',
+      style: 'curiosity',
+      scores: { curiosity: 95, emotion: 60, practical: 70, uniqueness: 75, overall: 75 },
+      analysis: '疑问句引发好奇心，对比制造认知冲突，读者会想知道答案而点进来。',
+      suggestions: ['开头可以用一个真实案例引出', '答案要具体可操作'],
+    },
+    {
+      id: 'title-5',
+      topicId: 't1-1',
+      title: '入职第一天我就得罪了同事，后来靠这5个细节扭转了局面',
+      style: 'emotion',
+      scores: { curiosity: 85, emotion: 90, practical: 75, uniqueness: 85, overall: 84 },
+      analysis: '先抑后扬的叙事结构，"得罪同事"制造紧张感，"扭转局面"给出爽点，情绪价值拉满。',
+      suggestions: ['一定要把"得罪同事"的场景写具体', '转折点要突出细节的重要性'],
+    },
+    {
+      id: 'title-6',
+      topicId: 't1-1',
+      title: '新人入职避坑指南：这5个细节没做好，能力再强也白搭',
+      style: 'practical',
+      scores: { curiosity: 70, emotion: 70, practical: 90, uniqueness: 55, overall: 71 },
+      analysis: '"避坑指南"是经典实用类标题模板，"能力再强也白搭"制造焦虑感，促使读者学习。',
+      suggestions: ['可以用反向案例开头', '每个坑配一个真实例子效果更好'],
+    },
+    {
+      id: 'title-7',
+      topicId: 't1-1',
+      title: '领导私下跟我说：职场新人这5个细节，比能力还重要',
+      style: 'curiosity',
+      scores: { curiosity: 92, emotion: 65, practical: 80, uniqueness: 88, overall: 81 },
+      analysis: '"领导私下跟我说"制造独家感和权威性，"比能力还重要"反常识，引发好奇心。',
+      suggestions: ['可以营造一种"内部消息"的感觉', '结尾可以加一个与领导的对话片段'],
+    },
+    {
+      id: 'title-8',
+      topicId: 't1-1',
+      title: '作为一个带过100+新人的leader，我最看重这5个加分细节',
+      style: 'practical',
+      scores: { curiosity: 85, emotion: 60, practical: 92, uniqueness: 75, overall: 78 },
+      analysis: '权威身份背书（带过100+新人）增加内容可信度，"最看重"强调重要性。',
+      suggestions: ['可以增加一个"反面教材"案例', '每个细节解释"为什么重要"'],
+    },
+    {
+      id: 'title-9',
+      topicId: 't1-1',
+      title: '00后新人必看：不想被当成"小孩"，这5件事一定要做到位',
+      style: 'emotion',
+      scores: { curiosity: 80, emotion: 88, practical: 75, uniqueness: 70, overall: 78 },
+      analysis: '精准戳中00后的痛点——不想被轻视，情绪共鸣强，目标用户明确。',
+      suggestions: ['开头可以用一句00后常听到的话引出', "避免说教感，多用'我理解'"],
+    },
+    {
+      id: 'title-10',
+      topicId: 't1-1',
+      title: '同事都夸我"会来事"，其实我只是记住了这5个简单的细节',
+      style: 'story',
+      scores: { curiosity: 75, emotion: 80, practical: 70, uniqueness: 80, overall: 76 },
+      analysis: '"会来事"是一个有争议的标签，"简单的细节"降低学习门槛，读者会想知道到底是什么。',
+      suggestions: ['可以重新定义"会来事"是高情商不是世故', '每个细节配一个具体场景'],
+    },
+    {
+      id: 'title-11',
+      topicId: 't1-1',
+      title: '入职3个月就成了团队核心，这5个细节帮了大忙',
+      style: 'story',
+      scores: { curiosity: 88, emotion: 75, practical: 80, uniqueness: 72, overall: 79 },
+      analysis: '3个月vs团队核心制造强烈对比，结果导向让读者看到学习后的美好前景。',
+      suggestions: ['可以对比入职前和入职3个月的变化', '突出"细节"的决定性作用'],
+    },
+    {
+      id: 'title-12',
+      topicId: 't1-1',
+      title: '职场不是学校，没人会主动教你这些——新人必知的5个潜规则',
+      style: 'controversy',
+      scores: { curiosity: 85, emotion: 75, practical: 85, uniqueness: 65, overall: 78 },
+      analysis: '"潜规则"带有神秘色彩，"没人会主动教你"制造紧迫感和稀缺感。',
+      suggestions: ['把"潜规则"重新定义为"默认共识"', '强调这是保护自己的方式'],
+    },
+  ],
 };
 
-export const generateScript = (topicId: string): ScriptFramework | null => {
-  const scripts: Record<string, ScriptFramework> = {
-    't1-1': {
-      id: 'script-1',
-      topicId: 't1-1',
-      title: '新人入职的5个加分细节',
-      hook: {
-        type: '场景引入',
-        content: '你有没有过这种经历：明明自己能力不差，干活也勤快，但在公司就是没有存在感？领导不重视，同事也不怎么搭理你。而有些新人，明明和你一起入职，却能在3个月内就脱颖而出，成为团队里的香饽饽。',
-        duration: '0:00-0:15',
-      },
-      body: [
-        {
-          id: 'body-1',
-          title: '细节一：记住每个人的名字和喜好',
-          content: '上班第一天，把部门所有人的名字、职位、甚至他们经常点什么奶茶都记下来。下次见面叫得出名字，偶尔随口说一句"你上次点的那家奶茶好喝吗"，瞬间拉近距离。',
-          duration: '0:15-0:45',
-          goldenQuote: '"记住别人的名字，是最低成本的社交投资。"',
-        },
-        {
-          id: 'body-2',
-          title: '细节二：学会"接话"而不是"打断"',
-          content: '开会时别急着发表高见，等别人说完，先肯定一句"刚才XX说的这点特别好"，再补充自己的想法。没人喜欢被否定，但人人都喜欢被认同。',
-          duration: '0:45-1:15',
-        },
-        {
-          id: 'body-3',
-          title: '细节三：不做"伸手党"，提问前先思考',
-          content: '遇到问题先自己查资料、想办法，实在搞不定再去问人。提问时先说"我已经尝试了A和B方法，但还是有问题"，别人才愿意帮你。',
-          duration: '1:15-1:45',
-          goldenQuote: '"能百度到的问题，就别麻烦别人。"',
-        },
-        {
-          id: 'body-4',
-          title: '细节四：靠谱比能力更重要',
-          content: '答应的事情一定要做到，做不到提前说。事事有回音，件件有着落。久而久之，领导就会觉得：这个年轻人，靠谱。',
-          duration: '1:45-2:15',
-        },
-        {
-          id: 'body-5',
-          title: '细节五：学会"恰到好处"地展示自己',
-          content: '不是让你去抢功，而是在合适的场合让领导看到你的价值。周会汇报、项目复盘，都是你展示成果的好机会。酒香也怕巷子深。',
-          duration: '2:15-2:45',
-          goldenQuote: '"你的价值，要让别人看得见。"',
-        },
-      ],
-      goldenQuotes: [
-        {
-          id: 'gq-1',
-          content: '记住别人的名字，是最低成本的社交投资。',
-          position: '第一点结尾',
-          type: '社交智慧',
-        },
-        {
-          id: 'gq-2',
-          content: '能百度到的问题，就别麻烦别人。',
-          position: '第三点结尾',
-          type: '职场素养',
-        },
-        {
-          id: 'gq-3',
-          content: '你的价值，要让别人看得见。',
-          position: '第五点结尾',
-          type: '个人成长',
-        },
-        {
-          id: 'gq-4',
-          content: '职场没有白走的路，每一步都算数。',
-          position: '结尾升华',
-          type: '励志金句',
-        },
-      ],
-      easterEggs: [
-        {
-          id: 'ee-1',
-          position: '开头0:10处',
-          type: '互动彩蛋',
-          description: '屏幕弹出选择题："你觉得职场新人最重要的品质是什么？A.能力强 B.情商高 C.很靠谱 D.长得好看"，在评论区留下你的答案。',
-        },
-        {
-          id: 'ee-2',
-          position: '2:00处',
-          type: '反转彩蛋',
-          description: '插一个小片段："我刚入职时也踩过一个大坑..." 然后快速闪回一个搞笑的失败经历，拉近距离。',
-        },
-        {
-          id: 'ee-3',
-          position: '结尾2:50处',
-          type: '福利彩蛋',
-          description: '"评论区留言【新人】，我把整理好的《新人入职避坑手册》免费送给你，里面还有30个职场高频问题的标准答案。"',
-        },
-      ],
-      ending: {
-        content: '其实职场没有那么复杂，很多时候，决定你能不能走得远的，恰恰是这些容易被忽略的小细节。把小事做好，大事自然会来找你。',
-        callToAction: '觉得有用的话，记得点赞收藏，分享给你身边正在找工作或者刚入职的朋友。关注我，每天一个职场小技巧，让你的升职加薪之路走得更顺畅。我们下期见！',
-        duration: '2:45-3:10',
-      },
-      totalDuration: '约3分10秒',
+const scriptTemplates: Record<string, ScriptFramework> = {
+  't1-1': {
+    id: 'script-1',
+    topicId: 't1-1',
+    title: '新人入职的5个加分细节',
+    hook: {
+      type: '场景引入',
+      content: '你有没有过这种经历：明明自己能力不差，干活也勤快，但在公司就是没有存在感？领导不重视，同事也不怎么搭理你。而有些新人，明明和你一起入职，却能在3个月内就脱颖而出，成为团队里的香饽饽。',
+      duration: '0:00-0:15',
     },
-  };
+    body: [
+      {
+        id: 'body-1',
+        title: '细节一：记住每个人的名字和喜好',
+        content: '上班第一天，把部门所有人的名字、职位、甚至他们经常点什么奶茶都记下来。下次见面叫得出名字，偶尔随口说一句"你上次点的那家奶茶好喝吗"，瞬间拉近距离。',
+        duration: '0:15-0:45',
+        goldenQuote: '"记住别人的名字，是最低成本的社交投资。"',
+      },
+      {
+        id: 'body-2',
+        title: '细节二：学会"接话"而不是"打断"',
+        content: '开会时别急着发表高见，等别人说完，先肯定一句"刚才XX说的这点特别好"，再补充自己的想法。没人喜欢被否定，但人人都喜欢被认同。',
+        duration: '0:45-1:15',
+      },
+      {
+        id: 'body-3',
+        title: '细节三：不做"伸手党"，提问前先思考',
+        content: '遇到问题先自己查资料、想办法，实在搞不定再去问人。提问时先说"我已经尝试了A和B方法，但还是有问题"，别人才愿意帮你。',
+        duration: '1:15-1:45',
+        goldenQuote: '"能百度到的问题，就别麻烦别人。"',
+      },
+      {
+        id: 'body-4',
+        title: '细节四：靠谱比能力更重要',
+        content: '答应的事情一定要做到，做不到提前说。事事有回音，件件有着落。久而久之，领导就会觉得：这个年轻人，靠谱。',
+        duration: '1:45-2:15',
+      },
+      {
+        id: 'body-5',
+        title: '细节五：学会"恰到好处"地展示自己',
+        content: '不是让你去抢功，而是在合适的场合让领导看到你的价值。周会汇报、项目复盘，都是你展示成果的好机会。酒香也怕巷子深。',
+        duration: '2:15-2:45',
+        goldenQuote: '"你的价值，要让别人看得见。"',
+      },
+    ],
+    goldenQuotes: [
+      {
+        id: 'gq-1',
+        content: '记住别人的名字，是最低成本的社交投资。',
+        position: '第一点结尾',
+        type: '社交智慧',
+      },
+      {
+        id: 'gq-2',
+        content: '能百度到的问题，就别麻烦别人。',
+        position: '第三点结尾',
+        type: '职场素养',
+      },
+      {
+        id: 'gq-3',
+        content: '你的价值，要让别人看得见。',
+        position: '第五点结尾',
+        type: '个人成长',
+      },
+      {
+        id: 'gq-4',
+        content: '职场没有白走的路，每一步都算数。',
+        position: '结尾升华',
+        type: '励志金句',
+      },
+    ],
+    easterEggs: [
+      {
+        id: 'ee-1',
+        position: '开头0:10处',
+        type: '互动彩蛋',
+        description: '屏幕弹出选择题："你觉得职场新人最重要的品质是什么？A.能力强 B.情商高 C.很靠谱 D.长得好看"，在评论区留下你的答案。',
+      },
+      {
+        id: 'ee-2',
+        position: '2:00处',
+        type: '反转彩蛋',
+        description: '插一个小片段："我刚入职时也踩过一个大坑..." 然后快速闪回一个搞笑的失败经历，拉近距离。',
+      },
+      {
+        id: 'ee-3',
+        position: '结尾2:50处',
+        type: '福利彩蛋',
+        description: '"评论区留言【新人】，我把整理好的《新人入职避坑手册》免费送给你，里面还有30个职场高频问题的标准答案。"',
+      },
+    ],
+    ending: {
+      content: '其实职场没有那么复杂，很多时候，决定你能不能走得远的，恰恰是这些容易被忽略的小细节。把小事做好，大事自然会来找你。',
+      callToAction: '觉得有用的话，记得点赞收藏，分享给你身边正在找工作或者刚入职的朋友。关注我，每天一个职场小技巧，让你的升职加薪之路走得更顺畅。我们下期见！',
+      duration: '2:45-3:10',
+    },
+    totalDuration: '约3分10秒',
+  },
+};
 
-  return scripts[topicId] || null;
+const randomVariations = {
+  titles: [
+    ['学会一个都能少走3年弯路', '学会一个都能少走5年弯路', '学会一个都能少走2年弯路'],
+    ['领导主动给你加薪', '领导偷偷给你加薪', '领导主动给你升职'],
+    ['我只是做对了这5件小事', '我只是做对了这5件事', '我只是做好了这5件小事'],
+    ['有的人半年还在试用期？', '有的人一年还在试用期？', '有的人3个月就转正了？'],
+    ['后来靠这5个细节扭转了局面', '后来靠这5个细节逆袭', '后来靠这5个细节挽回局面'],
+    ['能力再强也白搭', '能力再强也没用', '能力再强也百搭'],
+    ['比能力还重要', '比能力更重要', '比能力重要10倍'],
+    ['我最看重这5个加分细节', '我最欣赏这5个加分细节', '我最在意这5个加分细节'],
+    ['这5件事一定要做到位', '这5件事一定要做好', '这5件事一定要注意'],
+    ['比简历还重要的5个细节', '比面试还重要的5个细节', '比学历还重要的5个细节'],
+    ['学会秒变职场达人', '学会秒变职场高手', '学会秒变职场明星'],
+    ['90%的新人都忽略了', '80%的新人都忽略了', '70%的新人都忽略了'],
+  ],
+  scriptHook: [
+    '你有没有过这种经历', '你有没有遇过这种情况', '你有没有碰到这种事',
+  ],
+  scriptContent: [
+    '很多人以为', '很多人觉得', '很多人认为',
+    '其实', '实际上', '事实上',
+    '我给你举个例子', '我给你讲个真实案例', '我给你讲个故事',
+  ],
+  goldenQuotes: [
+    ['职场没有白走的路，每一步都算数', '职场没有捷径，但有方法', '职场路漫漫，细节定成败'],
+    ['把小事做好，大事自然来', '把细节做好，机会自然来', '把简单的事做好，成功自然来'],
+    ['真正的职场高手，都是细节控', '真正的职场赢家，都注重细节', '真正厉害的人，都在细节上下功夫'],
+    ['情商不是讨好别人，而是做好自己', '情商不是圆滑，而是让人舒服', '情商不是会说话，而是会做人'],
+  ],
+};
+
+const shuffleArray = <T,>(array: T[]): T[] => {
+  const newArray = [...array];
+  for (let i = newArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+  }
+  return newArray;
+};
+
+const getRandomItem = <T,>(array: T[]): T => {
+  return array[Math.floor(Math.random() * array.length)];
+};
+
+export const refreshHotSpots = (): HotSpot[] => {
+  return mockHotSpots.map(spot => {
+    const heatChange = Math.floor(Math.random() * 200000) - 100000;
+    const matchChange = Math.floor(Math.random() * 10) - 5;
+    const trends: Array<'rising' | 'stable' | 'falling'> = ['rising', 'stable', 'falling'];
+    
+    return {
+      ...spot,
+      heatIndex: Math.max(100000, spot.heatIndex + heatChange),
+      matchScore: Math.max(0, Math.min(100, spot.matchScore + matchChange)),
+      trend: getRandomItem(trends),
+    };
+  });
+};
+
+export const generateTitles = (topicId: string, regenerate = false): TitleVariant[] => {
+  const baseTitles = titleTemplates[topicId] || [];
+  
+  if (!regenerate) return baseTitles;
+  
+  return baseTitles.map((title, index) => {
+    const variationIndex = index % randomVariations.titles.length;
+    const variations = randomVariations.titles[variationIndex];
+    let newTitleText = title.title;
+    
+    const originalPatterns = [
+      { pattern: '学会一个都能少走3年弯路', variations: randomVariations.titles[0] },
+      { pattern: '领导主动给你加薪', variations: randomVariations.titles[1] },
+      { pattern: '我只是做对了这5件小事', variations: randomVariations.titles[2] },
+      { pattern: '有的人半年还在试用期？', variations: randomVariations.titles[3] },
+      { pattern: '后来靠这5个细节扭转了局面', variations: randomVariations.titles[4] },
+      { pattern: '能力再强也白搭', variations: randomVariations.titles[5] },
+      { pattern: '比能力还重要', variations: randomVariations.titles[6] },
+      { pattern: '我最看重这5个加分细节', variations: randomVariations.titles[7] },
+      { pattern: '这5件事一定要做到位', variations: randomVariations.titles[8] },
+    ];
+    
+    originalPatterns.forEach(({ pattern, variations: vars }) => {
+      if (newTitleText.includes(pattern)) {
+        newTitleText = newTitleText.replace(pattern, getRandomItem(vars));
+      }
+    });
+    
+    const scoreVariation = Math.floor(Math.random() * 10) - 5;
+    const newScores = {
+      curiosity: Math.max(50, Math.min(100, title.scores.curiosity + scoreVariation)),
+      emotion: Math.max(50, Math.min(100, title.scores.emotion + scoreVariation)),
+      practical: Math.max(50, Math.min(100, title.scores.practical + scoreVariation)),
+      uniqueness: Math.max(50, Math.min(100, title.scores.uniqueness + scoreVariation)),
+      overall: 0,
+    };
+    newScores.overall = Math.round((newScores.curiosity + newScores.emotion + newScores.practical + newScores.uniqueness) / 4);
+    
+    return {
+      ...title,
+      id: `${title.id}-${Date.now()}-${index}`,
+      title: newTitleText,
+      scores: newScores,
+    };
+  });
+};
+
+export const generateScript = (topicId: string, regenerate = false): ScriptFramework | null => {
+  const baseScript = scriptTemplates[topicId];
+  if (!baseScript) return null;
+  
+  if (!regenerate) return baseScript;
+  
+  const newHook = {
+    ...baseScript.hook,
+    content: baseScript.hook.content.replace(
+      '你有没有过这种经历',
+      getRandomItem(randomVariations.scriptHook)
+    ),
+  };
+  
+  const newBody = baseScript.body.map((section, index) => {
+    let newContent = section.content;
+    randomVariations.scriptContent.forEach(pattern => {
+      if (newContent.includes(pattern)) {
+        newContent = newContent.replace(pattern, getRandomItem(randomVariations.scriptContent));
+      }
+    });
+    
+    return {
+      ...section,
+      id: `${section.id}-${Date.now()}-${index}`,
+      content: newContent,
+      goldenQuote: section.goldenQuote ? `"${getRandomItem(randomVariations.goldenQuotes[index % randomVariations.goldenQuotes.length])}"` : undefined,
+    };
+  });
+  
+  const newQuotes = baseScript.goldenQuotes.map((quote, index) => ({
+    ...quote,
+    id: `${quote.id}-${Date.now()}-${index}`,
+    content: getRandomItem(randomVariations.goldenQuotes[index % randomVariations.goldenQuotes.length]),
+  }));
+  
+  const newEggs = shuffleArray(baseScript.easterEggs).map((egg, index) => ({
+    ...egg,
+    id: `${egg.id}-${Date.now()}-${index}`,
+  }));
+  
+  return {
+    ...baseScript,
+    id: `${baseScript.id}-${Date.now()}`,
+    hook: newHook,
+    body: newBody,
+    goldenQuotes: newQuotes,
+    easterEggs: newEggs,
+  };
 };

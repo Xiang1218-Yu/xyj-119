@@ -2,11 +2,11 @@ import { motion } from 'framer-motion';
 import { 
   Scroll, ArrowLeft, RefreshCw, Download, Copy, Check, 
   Quote, Gift, Play, Clock, FileText, Sparkles, ChevronRight,
-  Bookmark, Share2
+  Bookmark, Share2, X, Globe
 } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function ScriptPage() {
   const { 
@@ -19,6 +19,50 @@ export default function ScriptPage() {
   
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'full' | 'hook' | 'body' | 'quotes' | 'eggs'>('full');
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareCopied, setShareCopied] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (selectedTopic && !scriptFramework) {
+      generateScriptForTopic(selectedTopic.id);
+    }
+  }, [selectedTopic, scriptFramework, generateScriptForTopic]);
+
+  const handleRegenerate = async () => {
+    if (!selectedTopic || isRegenerating) return;
+    setIsRegenerating(true);
+    await new Promise(resolve => setTimeout(resolve, 500));
+    generateScriptForTopic(selectedTopic.id, true);
+    setIsRegenerating(false);
+  };
+
+  const handleShare = async (platform: string) => {
+    if (!scriptFramework) return;
+    
+    const shareText = `📝 选题：${scriptFramework.title}\n\n💡 已为你生成完整脚本框架，包含开头引入、正文分论点、金句推荐和彩蛋规划！\n\n${selectedTitles.length > 0 ? `🎯 备选标题：${selectedTitles.map(t => `「${t.title}」`).join('、')}\n\n` : ''}来自「内容创作者选题工具」`;
+    
+    try {
+      if (platform === 'copy') {
+        await navigator.clipboard.writeText(shareText);
+        setShareCopied('copy');
+        setTimeout(() => setShareCopied(null), 2000);
+      } else if (platform === 'link') {
+        const shareUrl = `${window.location.origin}?topic=${selectedTopic.id}`;
+        await navigator.clipboard.writeText(shareUrl);
+        setShareCopied('link');
+        setTimeout(() => setShareCopied(null), 2000);
+      } else if (navigator.share) {
+        await navigator.share({
+          title: scriptFramework.title,
+          text: shareText,
+          url: window.location.href,
+        });
+      }
+    } catch (e) {
+      console.warn('Share failed:', e);
+    }
+  };
 
   if (!selectedTopic) {
     return (
@@ -46,14 +90,41 @@ export default function ScriptPage() {
     );
   }
 
-  if (!scriptFramework) {
-    generateScriptForTopic(selectedTopic.id);
-  }
-
   const handleCopy = (text: string, sectionId: string) => {
     navigator.clipboard.writeText(text);
     setCopiedSection(sectionId);
     setTimeout(() => setCopiedSection(null), 2000);
+  };
+
+  const getFullScriptText = () => {
+    if (!scriptFramework) return '';
+    return [
+      `【标题】${scriptFramework.title}`,
+      `【时长】${scriptFramework.totalDuration}`,
+      '',
+      `【开头引入】（${scriptFramework.hook.type} - ${scriptFramework.hook.duration}）`,
+      scriptFramework.hook.content,
+      '',
+      '【正文分论点】',
+      ...scriptFramework.body.map((s, i) => [
+        `${i + 1}. ${s.title}（${s.duration}）`,
+        s.content,
+        s.goldenQuote ? `金句：${s.goldenQuote}` : '',
+        ''
+      ].filter(Boolean).join('\n')),
+      '',
+      '【金句推荐】',
+      ...scriptFramework.goldenQuotes.map(q => `- [${q.type}] ${q.content}（${q.position}）`),
+      '',
+      '【彩蛋规划】',
+      ...scriptFramework.easterEggs.map(e => `- [${e.type}] ${e.position}：${e.description}`),
+      '',
+      `【结尾升华】（${scriptFramework.ending.duration}）`,
+      scriptFramework.ending.content,
+      '',
+      '【互动引导】',
+      scriptFramework.ending.callToAction,
+    ].join('\n');
   };
 
   const tabs = [
@@ -100,15 +171,35 @@ export default function ScriptPage() {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => generateScriptForTopic(selectedTopic.id)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+                onClick={handleRegenerate}
+                disabled={isRegenerating}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <RefreshCw className="w-4 h-4" />
-                <span className="text-sm">重新生成</span>
+                <RefreshCw className={cn("w-4 h-4", isRegenerating && "animate-spin")} />
+                <span className="text-sm">{isRegenerating ? "生成中..." : "重新生成"}</span>
               </motion.button>
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
+                onClick={() => setShowShareModal(true)}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+              >
+                <Share2 className="w-4 h-4" />
+                <span className="text-sm">分享方案</span>
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => {
+                  if (!scriptFramework) return;
+                  const blob = new Blob([getFullScriptText()], { type: 'text/plain' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `${scriptFramework.title}.txt`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
               >
                 <Download className="w-4 h-4" />
@@ -396,6 +487,7 @@ export default function ScriptPage() {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
+                onClick={() => setShowShareModal(true)}
                 className="flex items-center gap-2 px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
               >
                 <Share2 className="w-4 h-4" />
@@ -404,36 +496,7 @@ export default function ScriptPage() {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => {
-                  const fullScript = [
-                    `【标题】${scriptFramework.title}`,
-                    `【时长】${scriptFramework.totalDuration}`,
-                    '',
-                    `【开头引入】（${scriptFramework.hook.type} - ${scriptFramework.hook.duration}）`,
-                    scriptFramework.hook.content,
-                    '',
-                    '【正文分论点】',
-                    ...scriptFramework.body.map((s, i) => [
-                      `${i + 1}. ${s.title}（${s.duration}）`,
-                      s.content,
-                      s.goldenQuote ? `金句：${s.goldenQuote}` : '',
-                      ''
-                    ].filter(Boolean).join('\n')),
-                    '',
-                    '【金句推荐】',
-                    ...scriptFramework.goldenQuotes.map(q => `- [${q.type}] ${q.content}（${q.position}）`),
-                    '',
-                    '【彩蛋规划】',
-                    ...scriptFramework.easterEggs.map(e => `- [${e.type}] ${e.position}：${e.description}`),
-                    '',
-                    `【结尾升华】（${scriptFramework.ending.duration}）`,
-                    scriptFramework.ending.content,
-                    '',
-                    '【互动引导】',
-                    scriptFramework.ending.callToAction,
-                  ].join('\n');
-                  handleCopy(fullScript, 'full');
-                }}
+                onClick={() => handleCopy(getFullScriptText(), 'full')}
                 className={cn(
                   "flex items-center gap-2 px-6 py-3 rounded-xl font-medium",
                   "bg-gradient-to-r from-violet-500 to-purple-600 text-white",
@@ -461,6 +524,111 @@ export default function ScriptPage() {
           </motion.div>
         )}
       </div>
+
+      {showShareModal && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={() => setShowShareModal(false)}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md mx-4 p-6 rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-white">分享脚本方案</h3>
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setShowShareModal(false)}
+                className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400"
+              >
+                <X className="w-4 h-4" />
+              </motion.button>
+            </div>
+
+            <div className="space-y-3">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => handleShare('copy')}
+                className="w-full flex items-center gap-3 p-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-left transition-colors"
+              >
+                <div className="w-10 h-10 rounded-lg bg-violet-500/20 flex items-center justify-center">
+                  <Copy className="w-5 h-5 text-violet-400" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium text-white">复制分享文案</p>
+                  <p className="text-xs text-slate-400">复制完整的方案分享给朋友</p>
+                </div>
+                {shareCopied === 'copy' && <Check className="w-5 h-5 text-emerald-400" />}
+              </motion.button>
+
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => handleShare('link')}
+                className="w-full flex items-center gap-3 p-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-left transition-colors"
+              >
+                <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                  <Globe className="w-5 h-5 text-emerald-400" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium text-white">复制链接</p>
+                  <p className="text-xs text-slate-400">生成分享链接发送给好友</p>
+                </div>
+                {shareCopied === 'link' && <Check className="w-5 h-5 text-emerald-400" />}
+              </motion.button>
+
+              {typeof navigator !== 'undefined' && 'share' in navigator && (
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => handleShare('native')}
+                  className="w-full flex items-center gap-3 p-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-left transition-colors"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                    <Share2 className="w-5 h-5 text-amber-400" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-white">系统分享</p>
+                    <p className="text-xs text-slate-400">通过系统分享菜单发送</p>
+                  </div>
+                </motion.button>
+              )}
+
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => {
+                  if (!scriptFramework) return;
+                  const blob = new Blob([getFullScriptText()], { type: 'text/plain' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `${scriptFramework.title}.txt`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+                className="w-full flex items-center gap-3 p-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-left transition-colors"
+              >
+                <div className="w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center">
+                  <Download className="w-5 h-5 text-cyan-400" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium text-white">下载脚本文件</p>
+                  <p className="text-xs text-slate-400">导出为 TXT 文件保存</p>
+                </div>
+              </motion.button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
     </div>
   );
 }
