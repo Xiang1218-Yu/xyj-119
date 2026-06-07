@@ -15,6 +15,8 @@ interface AppState {
   selectedPlatform: string | null;
   sortBy: 'heat' | 'match' | 'time';
   isRefreshing: boolean;
+  favoriteIds: string[];
+  scrollToHotSpotId: string | null;
   
   setSelectedHotSpot: (hotspot: HotSpot | null) => void;
   setSelectedTopic: (topic: TopicSuggestion | null) => void;
@@ -29,6 +31,9 @@ interface AppState {
   generateScriptForTopic: (topicId: string, regenerate?: boolean) => void;
   clearSelectedTitles: () => void;
   navigateToNextStep: () => void;
+  toggleFavorite: (hotSpotId: string) => void;
+  isFavorite: (hotSpotId: string) => boolean;
+  setScrollToHotSpotId: (id: string | null) => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -44,6 +49,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   selectedPlatform: null,
   sortBy: 'match',
   isRefreshing: false,
+  favoriteIds: [],
+  scrollToHotSpotId: null,
 
   setSelectedHotSpot: (hotspot) => set({ selectedHotSpot: hotspot }),
   setSelectedTopic: (topic) => set({ selectedTopic: topic }),
@@ -107,6 +114,29 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({ currentPage: 'script' });
     }
   },
+
+  toggleFavorite: (hotSpotId) => {
+    const { favoriteIds } = get();
+    const isFavorited = favoriteIds.includes(hotSpotId);
+    let newFavoriteIds: string[];
+    if (isFavorited) {
+      newFavoriteIds = favoriteIds.filter(id => id !== hotSpotId);
+    } else {
+      newFavoriteIds = [...favoriteIds, hotSpotId];
+    }
+    set({ favoriteIds: newFavoriteIds });
+    try {
+      localStorage.setItem('favoriteHotSpots', JSON.stringify(newFavoriteIds));
+    } catch (e) {
+      console.warn('Failed to save favorites to localStorage');
+    }
+  },
+
+  isFavorite: (hotSpotId) => {
+    return get().favoriteIds.includes(hotSpotId);
+  },
+
+  setScrollToHotSpotId: (id) => set({ scrollToHotSpotId: id }),
 }));
 
 const loadSavedProfile = () => {
@@ -121,4 +151,17 @@ const loadSavedProfile = () => {
   }
 };
 
+const loadSavedFavorites = () => {
+  try {
+    const saved = localStorage.getItem('favoriteHotSpots');
+    if (saved) {
+      const favoriteIds = JSON.parse(saved);
+      useAppStore.setState({ favoriteIds });
+    }
+  } catch (e) {
+    console.warn('Failed to load favorites from localStorage');
+  }
+};
+
 loadSavedProfile();
+loadSavedFavorites();

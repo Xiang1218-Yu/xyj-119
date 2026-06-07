@@ -1,7 +1,9 @@
 import { motion } from 'framer-motion';
 import { Flame, Filter, SortAsc, Zap, RefreshCw, Sparkles } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import HotSpotCard from '@/components/hotspot/HotSpotCard';
+import FavoriteSidebar from '@/components/hotspot/FavoriteSidebar';
 import { cn } from '@/lib/utils';
 
 const platforms = [
@@ -29,8 +31,27 @@ export default function HotSpotPage() {
     setSortBy,
     selectedHotSpot,
     isRefreshing,
-    refreshHotSpotList
+    refreshHotSpotList,
+    scrollToHotSpotId,
+    setScrollToHotSpotId,
+    favoriteIds
   } = useAppStore();
+
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollToHotSpotId && containerRef.current) {
+      const element = document.getElementById(`hotspot-${scrollToHotSpotId}`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        element.classList.add('ring-2', 'ring-amber-400', 'ring-offset-2', 'ring-offset-slate-950');
+        setTimeout(() => {
+          element.classList.remove('ring-2', 'ring-amber-400', 'ring-offset-2', 'ring-offset-slate-950');
+        }, 2000);
+        setScrollToHotSpotId(null);
+      }
+    }
+  }, [scrollToHotSpotId, setScrollToHotSpotId]);
 
   const filteredHotSpots = hotSpots
     .filter(h => !selectedPlatform || h.platform === selectedPlatform)
@@ -41,12 +62,13 @@ export default function HotSpotPage() {
     });
 
   return (
-    <div className="min-h-screen bg-slate-950">
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="sticky top-0 z-40 bg-slate-900/80 backdrop-blur-xl border-b border-slate-800"
-      >
+    <div className="min-h-screen bg-slate-950 flex">
+      <div ref={containerRef} className="flex-1 min-w-0">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="sticky top-0 z-40 bg-slate-900/80 backdrop-blur-xl border-b border-slate-800"
+        >
         <div className="px-8 py-6">
           <div className="flex items-start justify-between mb-6">
             <div>
@@ -156,6 +178,10 @@ export default function HotSpotPage() {
           </motion.div>
         )}
       </div>
+      </div>
+      <aside className="w-72 flex-shrink-0 sticky top-0 h-screen overflow-hidden border-l border-slate-800">
+        <FavoriteSidebar />
+      </aside>
     </div>
   );
 }

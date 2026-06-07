@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Flame, TrendingUp, TrendingDown, Minus, Check, Eye } from 'lucide-react';
+import { Flame, TrendingUp, TrendingDown, Minus, Check, Eye, Star, Lightbulb } from 'lucide-react';
 import { HotSpot } from '@/types';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
@@ -32,9 +32,15 @@ const formatHeatIndex = (num: number): string => {
 };
 
 export default function HotSpotCard({ hotspot, index }: HotSpotCardProps) {
-  const { selectedHotSpot, setSelectedHotSpot, generateTopicsForHotSpot, setCurrentPage } = useAppStore();
+  const { selectedHotSpot, setSelectedHotSpot, generateTopicsForHotSpot, setCurrentPage, toggleFavorite, isFavorite } = useAppStore();
   const isSelected = selectedHotSpot?.id === hotspot.id;
   const isHighMatch = hotspot.matchScore >= 80;
+  const isFavorited = isFavorite(hotspot.id);
+
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    toggleFavorite(hotspot.id);
+  };
 
   const handleSelect = () => {
     if (isSelected) {
@@ -50,6 +56,7 @@ export default function HotSpotCard({ hotspot, index }: HotSpotCardProps) {
 
   return (
     <motion.div
+      id={`hotspot-${hotspot.id}`}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
@@ -61,11 +68,25 @@ export default function HotSpotCard({ hotspot, index }: HotSpotCardProps) {
           : "bg-slate-800/50 border-slate-700/50 hover:bg-slate-800 hover:border-slate-600 hover:shadow-xl"
       )}
     >
+      <motion.button
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={handleFavoriteClick}
+        className={cn(
+          "absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-colors",
+          isFavorited
+            ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30"
+            : "bg-slate-700/50 text-slate-400 hover:bg-slate-700 hover:text-slate-200"
+        )}
+      >
+        <Star className={cn("w-4 h-4", isFavorited && "fill-current")} />
+      </motion.button>
+
       {isHighMatch && (
         <motion.div
           initial={{ opacity: 0, scale: 0 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="absolute top-3 right-3 px-2 py-1 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center gap-1"
+          className="absolute top-3 right-14 px-2 py-1 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center gap-1"
         >
           <Flame className="w-3 h-3 text-amber-400" />
           <span className="text-xs font-medium text-amber-300">高匹配</span>
@@ -175,7 +196,7 @@ export default function HotSpotCard({ hotspot, index }: HotSpotCardProps) {
       )}
 
       {isSelected && (
-        <div className="absolute top-4 right-16">
+        <div className="absolute top-4 right-28">
           <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center">
             <Check className="w-4 h-4 text-white" />
           </div>
@@ -184,5 +205,3 @@ export default function HotSpotCard({ hotspot, index }: HotSpotCardProps) {
     </motion.div>
   );
 }
-
-import { Lightbulb } from 'lucide-react';
