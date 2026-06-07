@@ -6,7 +6,8 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { copyToClipboard, showToast } from '@/utils/copyToClipboard';
 
 export default function ScriptPage() {
   const { 
@@ -39,38 +40,68 @@ export default function ScriptPage() {
     setIsRegenerating(false);
   };
 
-  const handleShare = async (platform: string) => {
-    if (!scriptFramework) return;
+  const handleShare = useCallback(async (platform: string) => {
+    if (!scriptFramework || !selectedTopic) return;
     
     const shareText = `📝 选题：${scriptFramework.title}\n\n💡 已为你生成完整脚本框架，包含开头引入、正文分论点、金句推荐和彩蛋规划！\n\n${selectedTitles.length > 0 ? `🎯 备选标题：${selectedTitles.map(t => `「${t.title}」`).join('、')}\n\n` : ''}来自「内容创作者选题工具」`;
+    const shareUrl = `${window.location.origin}?topic=${selectedTopic.id}`;
     
     try {
       if (platform === 'copy') {
-        await navigator.clipboard.writeText(shareText);
-        setShareCopied('copy');
-        setTimeout(() => setShareCopied(null), 2000);
+        const result = await copyToClipboard(shareText);
+        if (result.success) {
+          setShareCopied('copy');
+          showToast('分享文案已复制', 'success');
+          setTimeout(() => setShareCopied(null), 2000);
+        } else {
+          showToast(`复制失败：${result.error}`, 'error');
+        }
       } else if (platform === 'link') {
-        const shareUrl = `${window.location.origin}?topic=${selectedTopic.id}`;
-        await navigator.clipboard.writeText(shareUrl);
-        setShareCopied('link');
-        setTimeout(() => setShareCopied(null), 2000);
-      } else if (platform === 'native' && 'share' in navigator) {
-        await navigator.share({
-          title: scriptFramework.title,
-          text: shareText,
-          url: window.location.href,
-        });
+        const result = await copyToClipboard(shareUrl);
+        if (result.success) {
+          setShareCopied('link');
+          showToast('链接已复制', 'success');
+          setTimeout(() => setShareCopied(null), 2000);
+        } else {
+          showToast(`复制失败：${result.error}`, 'error');
+        }
+      } else if (platform === 'native') {
+        if ('share' in navigator && window.isSecureContext) {
+          try {
+            await navigator.share({
+              title: scriptFramework.title,
+              text: shareText,
+              url: shareUrl,
+            });
+            showToast('分享成功', 'success');
+          } catch (shareError) {
+            if ((shareError as Error).name !== 'AbortError') {
+              const result = await copyToClipboard(shareUrl);
+              if (result.success) {
+                setShareCopied('link');
+                showToast('系统分享不可用，链接已复制', 'success');
+                setTimeout(() => setShareCopied(null), 2000);
+              } else {
+                showToast('分享失败，请手动复制链接', 'error');
+              }
+            }
+          }
+        } else {
+          const result = await copyToClipboard(shareUrl);
+          if (result.success) {
+            setShareCopied('link');
+            showToast('当前环境不支持系统分享，链接已复制', 'success');
+            setTimeout(() => setShareCopied(null), 2000);
+          } else {
+            showToast(`复制失败：${result.error}`, 'error');
+          }
+        }
       }
     } catch (e) {
-      console.warn('Share failed:', e);
-      if (platform === 'native') {
-        const shareUrl = `${window.location.origin}?topic=${selectedTopic.id}`;
-        await navigator.clipboard.writeText(shareUrl);
-        setShareCopied('link');
-        setTimeout(() => setShareCopied(null), 2000);
-      }
+      console.error('Share failed:', e);
+      showToast('分享失败，请稍后重试', 'error');
     }
-  };
+  }, [scriptFramework, selectedTopic, selectedTitles]);
 
   if (!selectedTopic) {
     return (
@@ -98,11 +129,16 @@ export default function ScriptPage() {
     );
   }
 
-  const handleCopy = (text: string, sectionId: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedSection(sectionId);
-    setTimeout(() => setCopiedSection(null), 2000);
-  };
+  const handleCopy = useCallback(async (text: string, sectionId: string) => {
+    const result = await copyToClipboard(text);
+    if (result.success) {
+      setCopiedSection(sectionId);
+      showToast('已复制到剪贴板', 'success');
+      setTimeout(() => setCopiedSection(null), 2000);
+    } else {
+      showToast(`复制失败：${result.error}`, 'error');
+    }
+  }, []);
 
   const getFullScriptText = () => {
     if (!scriptFramework) return '';

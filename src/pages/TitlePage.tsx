@@ -4,7 +4,8 @@ import { useAppStore } from '@/store/useAppStore';
 import TitleCard from '@/components/title/TitleCard';
 import RadarChart from '@/components/charts/RadarChart';
 import { cn } from '@/lib/utils';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { showToast } from '@/utils/copyToClipboard';
 
 const styleFilters = [
   { id: null, label: '全部' },
@@ -30,21 +31,84 @@ export default function TitlePage() {
   const [styleFilter, setStyleFilter] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'score' | 'curiosity' | 'emotion' | 'practical' | 'uniqueness'>('score');
   const [isRegenerating, setIsRegenerating] = useState(false);
-  const [hasGenerated, setHasGenerated] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const [showRetryError, setShowRetryError] = useState(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const maxRetries = 3;
+
+  const loadTitles = useCallback((regenerate = false) => {
+    if (!selectedTopic) return;
+    
+    setIsLoading(true);
+    setShowRetryError(false);
+    
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    
+    timeoutRef.current = setTimeout(() => {
+      if (titleVariants.length === 0) {
+        setShowRetryError(true);
+        setIsLoading(false);
+        showToast('生成超时，请点击重试', 'error');
+      }
+    }, 5000);
+    
+    try {
+      generateTitlesForTopic(selectedTopic.id, regenerate);
+      if (regenerate) {
+        showToast('正在重新生成标题...', 'success');
+      }
+    } catch (e) {
+      console.error('Failed to generate titles:', e);
+      setShowRetryError(true);
+      setIsLoading(false);
+      showToast('生成失败，请稍后重试', 'error');
+    }
+  }, [selectedTopic, titleVariants.length, generateTitlesForTopic]);
 
   useEffect(() => {
-    if (selectedTopic && titleVariants.length === 0 && !hasGenerated) {
-      setHasGenerated(true);
-      generateTitlesForTopic(selectedTopic.id);
+    if (selectedTopic && titleVariants.length === 0 && !isLoading) {
+      loadTitles();
     }
-  }, [selectedTopic, hasGenerated]);
+  }, [selectedTopic, titleVariants.length, isLoading, loadTitles]);
+
+  useEffect(() => {
+    if (titleVariants.length > 0) {
+      setIsLoading(false);
+      setShowRetryError(false);
+      setRetryCount(0);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    }
+  }, [titleVariants.length]);
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleRegenerate = async () => {
     if (!selectedTopic || isRegenerating) return;
     setIsRegenerating(true);
+    setRetryCount(prev => prev + 1);
     await new Promise(resolve => setTimeout(resolve, 500));
-    generateTitlesForTopic(selectedTopic.id, true);
+    loadTitles(true);
     setIsRegenerating(false);
+  };
+
+  const handleRetry = () => {
+    if (retryCount >= maxRetries) {
+      alert(`已重试${maxRetries}次，请稍后再试或刷新页面`);
+      return;
+    }
+    setRetryCount(prev => prev + 1);
+    loadTitles(false);
   };
 
   if (!selectedTopic) {
@@ -286,12 +350,52 @@ export default function TitlePage() {
             animate={{ opacity: 1 }}
             className="flex flex-col items-center justify-center py-20"
           >
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-              className="w-12 h-12 border-2 border-violet-500 border-t-transparent rounded-full mb-4"
-            />
-            <p className="text-slate-400">正在生成标题变体...</p>
+            {showRetryError ? (
+              <>
+                <div className="w-16 h-16 rounded-2xl bg-red-500/10 flex items-center justify-center mb-4">
+                  <svg className="w-8 h-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <p className="text-red-400 font-medium mb-2">生成超时</p>
+                <p className="text-slate-500 text-sm mb-4">网络可能有点慢，建议重试一下</p>
+                <p className="text-xs text-slate-600 mb-4">已尝试 {retryCount}/{maxRetries} 次</p>
+                <div className="flex gap-3">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleRetry}
+                    disabled={retryCount >= maxRetries}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-500 text-white font-medium hover:bg-violet-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    重试
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setCurrentPage('topic')}
+                    className="px-5 py-2.5 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors"
+                  >
+                    返回选题页
+                  </motion.button>
+                </div>
+              </>
+            ) : (
+              <>
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                  className="w-12 h-12 border-2 border-violet-500 border-t-transparent rounded-full mb-4"
+                />
+                <p className="text-slate-400">正在生成标题变体...</p>
+                {isLoading && (
+                  <p className="text-xs text-slate-600 mt-2">
+                    {retryCount > 0 ? `第 ${retryCount} 次尝试中...` : 'AI 正在努力思考中'}
+                  </p>
+                )}
+              </>
+            )}
           </motion.div>
         )}
       </div>
