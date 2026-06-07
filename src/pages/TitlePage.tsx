@@ -30,12 +30,14 @@ export default function TitlePage() {
   const [styleFilter, setStyleFilter] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'score' | 'curiosity' | 'emotion' | 'practical' | 'uniqueness'>('score');
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [hasGenerated, setHasGenerated] = useState(false);
 
   useEffect(() => {
-    if (selectedTopic && titleVariants.length === 0) {
+    if (selectedTopic && titleVariants.length === 0 && !hasGenerated) {
+      setHasGenerated(true);
       generateTitlesForTopic(selectedTopic.id);
     }
-  }, [selectedTopic, titleVariants.length, generateTitlesForTopic]);
+  }, [selectedTopic, hasGenerated]);
 
   const handleRegenerate = async () => {
     if (!selectedTopic || isRegenerating) return;

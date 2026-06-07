@@ -22,12 +22,14 @@ export default function ScriptPage() {
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareCopied, setShareCopied] = useState<string | null>(null);
+  const [hasGenerated, setHasGenerated] = useState(false);
 
   useEffect(() => {
-    if (selectedTopic && !scriptFramework) {
+    if (selectedTopic && !scriptFramework && !hasGenerated) {
+      setHasGenerated(true);
       generateScriptForTopic(selectedTopic.id);
     }
-  }, [selectedTopic, scriptFramework, generateScriptForTopic]);
+  }, [selectedTopic, hasGenerated]);
 
   const handleRegenerate = async () => {
     if (!selectedTopic || isRegenerating) return;
@@ -52,7 +54,7 @@ export default function ScriptPage() {
         await navigator.clipboard.writeText(shareUrl);
         setShareCopied('link');
         setTimeout(() => setShareCopied(null), 2000);
-      } else if (navigator.share) {
+      } else if (platform === 'native' && 'share' in navigator) {
         await navigator.share({
           title: scriptFramework.title,
           text: shareText,
@@ -61,6 +63,12 @@ export default function ScriptPage() {
       }
     } catch (e) {
       console.warn('Share failed:', e);
+      if (platform === 'native') {
+        const shareUrl = `${window.location.origin}?topic=${selectedTopic.id}`;
+        await navigator.clipboard.writeText(shareUrl);
+        setShareCopied('link');
+        setTimeout(() => setShareCopied(null), 2000);
+      }
     }
   };
 
