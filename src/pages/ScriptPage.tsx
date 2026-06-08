@@ -1,14 +1,15 @@
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Scroll, ArrowLeft, RefreshCw, Download, Copy, Check, 
   Quote, Gift, Play, Clock, FileText, Sparkles, ChevronRight,
-  Bookmark, Share2, X, Globe, Edit3, EyeOff
+  Bookmark, Share2, X, Globe, Edit3, EyeOff, ListChecks
 } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { copyToClipboard, showToast, copyRichTextToClipboard } from '@/utils/copyToClipboard';
 import { scriptToMarkdown, markdownToHtml } from '@/utils/scriptToMarkdown';
+import ContentChecklist from '@/components/common/ContentChecklist';
 
 export default function ScriptPage() {
   const { 
@@ -20,7 +21,9 @@ export default function ScriptPage() {
     updateScriptFramework,
     updateScriptBodySection,
     updateScriptGoldenQuote,
-    updateScriptEasterEgg
+    updateScriptEasterEgg,
+    createChecklist,
+    getChecklistByScriptId,
   } = useAppStore();
   
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
@@ -31,6 +34,8 @@ export default function ScriptPage() {
   const [hasGenerated, setHasGenerated] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [localMarkdown, setLocalMarkdown] = useState('');
+  const [showChecklist, setShowChecklist] = useState(false);
+  const [checklistId, setChecklistId] = useState<string | null>(null);
 
   useEffect(() => {
     if (selectedTopic && !scriptFramework && !hasGenerated) {
@@ -42,8 +47,27 @@ export default function ScriptPage() {
   useEffect(() => {
     if (scriptFramework) {
       setLocalMarkdown(scriptToMarkdown(scriptFramework, selectedTitles));
+      const existingChecklist = getChecklistByScriptId(scriptFramework.id);
+      if (existingChecklist) {
+        setChecklistId(existingChecklist.id);
+      }
     }
-  }, [scriptFramework, selectedTitles]);
+  }, [scriptFramework, selectedTitles, getChecklistByScriptId]);
+
+  const handleCreateChecklist = () => {
+    if (!scriptFramework) return;
+    const existing = getChecklistByScriptId(scriptFramework.id);
+    if (existing) {
+      setChecklistId(existing.id);
+    } else {
+      const newChecklist = createChecklist({
+        scriptId: scriptFramework.id,
+        title: `${scriptFramework.title} - 完稿检查`,
+      });
+      setChecklistId(newChecklist.id);
+    }
+    setShowChecklist(true);
+  };
 
   const getFullScriptMarkdown = useCallback(() => {
     if (!scriptFramework) return '';
@@ -287,6 +311,20 @@ export default function ScriptPage() {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
+                onClick={handleCreateChecklist}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2.5 rounded-xl transition-colors",
+                  showChecklist 
+                    ? "bg-violet-500 text-white" 
+                    : "bg-slate-800 hover:bg-slate-700 text-slate-300"
+                )}
+              >
+                <ListChecks className="w-4 h-4" />
+                <span className="text-sm">完稿检查</span>
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => setShowShareModal(true)}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
               >
@@ -352,8 +390,12 @@ export default function ScriptPage() {
 
       <div className="px-8 py-6">
         {scriptFramework ? (
-          <div className="max-w-4xl mx-auto">
-            {activeTab === 'markdown' ? (
+          <div className="flex gap-6">
+            <div className={cn(
+              "flex-1 transition-all duration-300",
+              showChecklist ? "max-w-4xl" : "max-w-4xl mx-auto"
+            )}>
+              {activeTab === 'markdown' ? (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -828,6 +870,34 @@ export default function ScriptPage() {
                 </motion.div>
               </>
             )}
+            </div>
+            
+            <AnimatePresence>
+              {showChecklist && checklistId && (
+                <motion.div
+                  initial={{ opacity: 0, x: 50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 50 }}
+                  transition={{ duration: 0.3 }}
+                  className="w-96 flex-shrink-0"
+                >
+                  <div className="sticky top-24">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-semibold text-white">内容完稿检查</h3>
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setShowChecklist(false)}
+                        className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </motion.button>
+                    </div>
+                    <ContentChecklist checklistId={checklistId} />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         ) : (
           <motion.div

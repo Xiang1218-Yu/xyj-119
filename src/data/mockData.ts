@@ -1,4 +1,4 @@
-import { HotSpot, UserProfile, TopicSuggestion, TitleVariant, ScriptFramework, InspirationItem, InspirationDimension, InspirationDimensionData, CalendarEvent, ContentTypeConfig } from '@/types';
+import { HotSpot, UserProfile, TopicSuggestion, TitleVariant, ScriptFramework, InspirationItem, InspirationDimension, InspirationDimensionData, CalendarEvent, ContentTypeConfig, ChecklistItem, ContentChecklist } from '@/types';
 
 export const mockUserProfile: UserProfile = {
   id: '1',
@@ -1330,5 +1330,183 @@ export const generateCalendarEvent = (data: Partial<CalendarEvent>): CalendarEve
     topicId: data.topicId,
     status: data.status || 'draft',
     createdAt: new Date().toISOString(),
+  };
+};
+
+export const defaultChecklistItems: Omit<ChecklistItem, 'id' | 'createdAt'>[] = [
+  {
+    title: '标题符合平台风格',
+    description: '标题长度、关键词、表达方式适配目标平台',
+    completed: false,
+    isCustom: false,
+    category: 'content',
+  },
+  {
+    title: '开头3秒抓住注意力',
+    description: '开头引入部分是否有足够的吸引力',
+    completed: false,
+    isCustom: false,
+    category: 'content',
+  },
+  {
+    title: '正文逻辑清晰',
+    description: '分论点之间有逻辑关联，层层递进',
+    completed: false,
+    isCustom: false,
+    category: 'content',
+  },
+  {
+    title: '金句已植入',
+    description: '是否有让人印象深刻的金句',
+    completed: false,
+    isCustom: false,
+    category: 'content',
+  },
+  {
+    title: '结尾有互动引导',
+    description: '结尾是否引导用户评论、点赞、关注',
+    completed: false,
+    isCustom: false,
+    category: 'content',
+  },
+  {
+    title: '字数/时长符合要求',
+    description: '内容长度符合平台推荐范围',
+    completed: false,
+    isCustom: false,
+    category: 'format',
+  },
+  {
+    title: '分段清晰易读',
+    description: '段落长度适中，有足够的呼吸感',
+    completed: false,
+    isCustom: false,
+    category: 'format',
+  },
+  {
+    title: '错别字检查',
+    description: '通读全文，检查错别字和语法错误',
+    completed: false,
+    isCustom: false,
+    category: 'format',
+  },
+  {
+    title: '敏感词检测',
+    description: '检查是否有平台违禁内容',
+    completed: false,
+    isCustom: false,
+    category: 'platform',
+  },
+  {
+    title: '话题标签设置',
+    description: '已添加合适的话题标签/hashtag',
+    completed: false,
+    isCustom: false,
+    category: 'platform',
+  },
+  {
+    title: '封面图准备',
+    description: '已准备符合平台规格的封面图',
+    completed: false,
+    isCustom: false,
+    category: 'platform',
+  },
+];
+
+export const platformSpecificChecklist: Record<string, Omit<ChecklistItem, 'id' | 'createdAt'>[]> = {
+  '抖音': [
+    { title: '视频画面比例9:16', completed: false, isCustom: false, category: 'format', platform: '抖音' },
+    { title: '字幕清晰可见', completed: false, isCustom: false, category: 'format', platform: '抖音' },
+    { title: 'BGM版权合规', completed: false, isCustom: false, category: 'platform', platform: '抖音' },
+  ],
+  '小红书': [
+    { title: '首图吸睛', completed: false, isCustom: false, category: 'format', platform: '小红书' },
+    { title: 'emoji使用恰当', completed: false, isCustom: false, category: 'format', platform: '小红书' },
+    { title: '标签数量5-10个', completed: false, isCustom: false, category: 'platform', platform: '小红书' },
+  ],
+  'B站': [
+    { title: '视频标题有B站风格', completed: false, isCustom: false, category: 'content', platform: 'B站' },
+    { title: '分P设置合理', completed: false, isCustom: false, category: 'format', platform: 'B站' },
+    { title: '简介和关联视频已设置', completed: false, isCustom: false, category: 'platform', platform: 'B站' },
+  ],
+  '公众号': [
+    { title: '排版美观', completed: false, isCustom: false, category: 'format', platform: '公众号' },
+    { title: '封面图尺寸2.35:1', completed: false, isCustom: false, category: 'format', platform: '公众号' },
+    { title: '摘要已填写', completed: false, isCustom: false, category: 'platform', platform: '公众号' },
+  ],
+  '微博': [
+    { title: '字数控制在140字内', completed: false, isCustom: false, category: 'format', platform: '微博' },
+    { title: '带话题#', completed: false, isCustom: false, category: 'platform', platform: '微博' },
+    { title: '@相关账号', completed: false, isCustom: false, category: 'platform', platform: '微博' },
+  ],
+  '知乎': [
+    { title: '回答结构清晰', completed: false, isCustom: false, category: 'content', platform: '知乎' },
+    { title: '开头说明身份/立场', completed: false, isCustom: false, category: 'content', platform: '知乎' },
+    { title: '引用来源标注', completed: false, isCustom: false, category: 'format', platform: '知乎' },
+  ],
+  '视频号': [
+    { title: '视频时长1分钟内最佳', completed: false, isCustom: false, category: 'format', platform: '视频号' },
+    { title: '适配朋友圈分享', completed: false, isCustom: false, category: 'platform', platform: '视频号' },
+  ],
+  '小宇宙': [
+    { title: '音频质量清晰', completed: false, isCustom: false, category: 'format', platform: '小宇宙' },
+    { title: '节目简介吸引人', completed: false, isCustom: false, category: 'content', platform: '小宇宙' },
+    { title: '时间轴标签已添加', completed: false, isCustom: false, category: 'platform', platform: '小宇宙' },
+  ],
+  '快手': [
+    { title: '视频风格接地气', completed: false, isCustom: false, category: 'content', platform: '快手' },
+    { title: '封面文字醒目', completed: false, isCustom: false, category: 'format', platform: '快手' },
+  ],
+};
+
+export const generateChecklistItem = (
+  data: Partial<ChecklistItem>
+): ChecklistItem => {
+  return {
+    id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    title: data.title || '新检查项',
+    description: data.description,
+    completed: data.completed ?? false,
+    isCustom: data.isCustom ?? true,
+    category: data.category || 'other',
+    platform: data.platform,
+    scriptId: data.scriptId,
+    createdAt: new Date().toISOString(),
+    completedAt: data.completedAt,
+  };
+};
+
+export const generateChecklist = (
+  data: Partial<ContentChecklist> & { scriptId?: string; platform?: string }
+): ContentChecklist => {
+  const now = new Date().toISOString();
+  const items: ChecklistItem[] = [];
+
+  defaultChecklistItems.forEach(item => {
+    items.push(generateChecklistItem({
+      ...item,
+      scriptId: data.scriptId,
+      platform: data.platform,
+    }));
+  });
+
+  if (data.platform && platformSpecificChecklist[data.platform]) {
+    platformSpecificChecklist[data.platform].forEach(item => {
+      items.push(generateChecklistItem({
+        ...item,
+        scriptId: data.scriptId,
+      }));
+    });
+  }
+
+  return {
+    id: `checklist-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    scriptId: data.scriptId,
+    calendarEventId: data.calendarEventId,
+    platform: data.platform,
+    title: data.title || '内容完稿检查清单',
+    items,
+    createdAt: now,
+    updatedAt: now,
   };
 };

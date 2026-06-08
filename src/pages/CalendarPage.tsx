@@ -15,13 +15,15 @@ import {
   FileText,
   Radio,
   Image,
-  TvMinimal
+  TvMinimal,
+  ListChecks
 } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { contentTypeConfigs } from '@/data/mockData';
 import PomodoroTimer from '@/components/common/PomodoroTimer';
+import ContentChecklist from '@/components/common/ContentChecklist';
 import type { CalendarEvent, ContentType } from '@/types';
 import {
   BarChart,
@@ -64,7 +66,9 @@ export default function CalendarPage() {
     addCalendarEvent, 
     updateCalendarEvent, 
     deleteCalendarEvent,
-    moveCalendarEvent
+    moveCalendarEvent,
+    createChecklist,
+    getChecklistByCalendarEventId,
   } = useAppStore();
 
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -73,6 +77,21 @@ export default function CalendarPage() {
   const [draggedEvent, setDraggedEvent] = useState<string | null>(null);
   const [dragOverDate, setDragOverDate] = useState<string | null>(null);
   const modalRef = useRef<HTMLDivElement>(null);
+  const [activeModalTab, setActiveModalTab] = useState<'details' | 'checklist'>('details');
+  const [checklistId, setChecklistId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (editingEvent?.id) {
+      const existing = getChecklistByCalendarEventId(editingEvent.id);
+      if (existing) {
+        setChecklistId(existing.id);
+      } else {
+        setChecklistId(null);
+      }
+    } else {
+      setChecklistId(null);
+    }
+  }, [editingEvent?.id, getChecklistByCalendarEventId]);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -160,13 +179,26 @@ export default function CalendarPage() {
   const handleSaveEvent = () => {
     if (!editingEvent || !editingEvent.title?.trim()) return;
 
+    let eventId = editingEvent.id;
     if (editingEvent.id) {
       updateCalendarEvent(editingEvent.id, editingEvent);
     } else {
-      addCalendarEvent(editingEvent);
+      const newEvent = addCalendarEvent(editingEvent);
+      eventId = newEvent.id;
     }
+
+    if (!checklistId && editingEvent.platform) {
+      const newChecklist = createChecklist({
+        calendarEventId: eventId,
+        platform: editingEvent.platform,
+        title: `${editingEvent.title} - 完稿检查`,
+      });
+      setChecklistId(newChecklist.id);
+    }
+
     setShowModal(false);
     setEditingEvent(null);
+    setActiveModalTab('details');
   };
 
   const handleDeleteEvent = (id: string) => {
@@ -692,7 +724,55 @@ export default function CalendarPage() {
                 </button>
               </div>
 
-              <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+              <div className="flex gap-1 px-6 pt-4 border-b border-slate-700/50">
+                <button
+                  onClick={() => setActiveModalTab('details')}
+                  className={cn(
+                    "px-4 py-2 rounded-t-xl text-sm font-medium transition-all",
+                    activeModalTab === 'details'
+                      ? "bg-slate-700 text-white"
+                      : "text-slate-400 hover:text-white hover:bg-slate-700/50"
+                  )}
+                >
+                  基本信息
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveModalTab('checklist');
+                    if (!checklistId && editingEvent?.id && editingEvent?.platform) {
+                      const existing = getChecklistByCalendarEventId(editingEvent.id);
+                      if (!existing) {
+                        const newChecklist = createChecklist({
+                          calendarEventId: editingEvent.id,
+                          platform: editingEvent.platform,
+                          title: `${editingEvent.title} - 完稿检查`,
+                        });
+                        setChecklistId(newChecklist.id);
+                      }
+                    }
+                  }}
+                  className={cn(
+                    "flex items-center gap-1.5 px-4 py-2 rounded-t-xl text-sm font-medium transition-all",
+                    activeModalTab === 'checklist'
+                      ? "bg-slate-700 text-white"
+                      : "text-slate-400 hover:text-white hover:bg-slate-700/50"
+                  )}
+                >
+                  <ListChecks className="w-4 h-4" />
+                  完稿检查
+                </button>
+              </div>
+
+              <div className="p-6 max-h-[60vh] overflow-y-auto">
+                <AnimatePresence mode="wait">
+                  {activeModalTab === 'details' ? (
+                    <motion.div
+                      key="details"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 20 }}
+                      className="space-y-4"
+                    >
                 <div>
                   <label className="text-sm text-slate-400 mb-1.5 block">内容标题 *</label>
                   <input
@@ -862,6 +942,25 @@ export default function CalendarPage() {
                     </div>
                   )}
                 </div>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="checklist"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                    >
+                      {checklistId ? (
+                        <ContentChecklist checklistId={checklistId} />
+                      ) : (
+                        <div className="text-center py-12">
+                          <ListChecks className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                          <p className="text-slate-400 mb-4">请先保存发布计划以创建检查清单</p>
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               <div className="flex items-center justify-between p-6 border-t border-slate-700/50 bg-slate-800/50">

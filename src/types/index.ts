@@ -174,3 +174,32 @@ export interface PomodoroState {
   currentSessionStart: number | null;
   sessions: PomodoroSession[];
 }
+
+export interface ChecklistItem {
+  id: string;
+  title: string;
+  description?: string;
+  completed: boolean;
+  isCustom: boolean;
+  category: 'content' | 'format' | 'platform' | 'other';
+  platform?: string;
+  scriptId?: string;
+  createdAt: string;
+  completedAt?: string;
+}
+
+export interface ContentChecklist {
+  id: string;
+  scriptId?: string;
+  calendarEventId?: string;
+  platform?: string;
+  title: string;
+  items: ChecklistItem[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ChecklistState {
+  checklists: Record<string, ContentChecklist>;
+  activeChecklistId: string | null;
+}

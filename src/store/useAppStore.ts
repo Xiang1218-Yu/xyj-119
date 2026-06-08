@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { HotSpot, UserProfile, TopicSuggestion, TitleVariant, ScriptFramework, InspirationCombination, InspirationDimension, InspirationItem, CalendarEvent, PomodoroState, PomodoroMode, PomodoroSession } from '@/types';
-import { mockHotSpots, mockUserProfile, generateTopics, generateTitles, generateScript, refreshHotSpots, getRandomInspirationItem, mockCalendarEvents, generateCalendarEvent } from '@/data/mockData';
+import { HotSpot, UserProfile, TopicSuggestion, TitleVariant, ScriptFramework, InspirationCombination, InspirationDimension, InspirationItem, CalendarEvent, PomodoroState, PomodoroMode, PomodoroSession, ContentChecklist, ChecklistItem } from '@/types';
+import { mockHotSpots, mockUserProfile, generateTopics, generateTitles, generateScript, refreshHotSpots, getRandomInspirationItem, mockCalendarEvents, generateCalendarEvent, generateChecklist, generateChecklistItem } from '@/data/mockData';
 
 interface AppState {
   userProfile: UserProfile;
@@ -51,7 +51,7 @@ interface AppState {
   removeFavoriteInspiration: (inspirationId: string) => void;
   generateInspirationCombination: () => InspirationCombination;
   
-  addCalendarEvent: (event: Partial<CalendarEvent>) => void;
+  addCalendarEvent: (event: Partial<CalendarEvent>) => CalendarEvent;
   updateCalendarEvent: (id: string, updates: Partial<CalendarEvent>) => void;
   deleteCalendarEvent: (id: string) => void;
   setSelectedCalendarEvent: (event: CalendarEvent | null) => void;
@@ -65,6 +65,19 @@ interface AppState {
   tickPomodoro: () => void;
   setPomodoroDuration: (mode: PomodoroMode, minutes: number) => void;
   skipPomodoro: () => void;
+
+  checklists: Record<string, ContentChecklist>;
+  activeChecklistId: string | null;
+  
+  createChecklist: (data: { scriptId?: string; calendarEventId?: string; platform?: string; title?: string }) => ContentChecklist;
+  getChecklist: (id: string) => ContentChecklist | undefined;
+  getChecklistByScriptId: (scriptId: string) => ContentChecklist | undefined;
+  getChecklistByCalendarEventId: (eventId: string) => ContentChecklist | undefined;
+  toggleChecklistItem: (checklistId: string, itemId: string) => void;
+  addChecklistItem: (checklistId: string, item: Partial<ChecklistItem>) => void;
+  removeChecklistItem: (checklistId: string, itemId: string) => void;
+  updateChecklistItem: (checklistId: string, itemId: string, updates: Partial<ChecklistItem>) => void;
+  setActiveChecklistId: (id: string | null) => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -106,6 +119,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     format: false,
   },
   isRollingInspiration: false,
+  checklists: {},
+  activeChecklistId: null,
 
   setSelectedHotSpot: (hotspot) => set({ selectedHotSpot: hotspot }),
   setSelectedTopic: (topic) => set({ selectedTopic: topic }),
@@ -365,6 +380,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     } catch (e) {
       console.warn('Failed to save calendar events to localStorage');
     }
+    return newEvent;
   },
 
   updateCalendarEvent: (id, updates) => {
@@ -567,6 +583,135 @@ export const useAppStore = create<AppState>((set, get) => ({
       },
     });
   },
+
+  createChecklist: (data) => {
+    const { checklists } = get();
+    const newChecklist = generateChecklist(data);
+    const updatedChecklists = { ...checklists, [newChecklist.id]: newChecklist };
+    set({ 
+      checklists: updatedChecklists,
+      activeChecklistId: newChecklist.id,
+    });
+    try {
+      localStorage.setItem('checklists', JSON.stringify(updatedChecklists));
+    } catch (e) {
+      console.warn('Failed to save checklists to localStorage');
+    }
+    return newChecklist;
+  },
+
+  getChecklist: (id) => {
+    return get().checklists[id];
+  },
+
+  getChecklistByScriptId: (scriptId) => {
+    const { checklists } = get();
+    return Object.values(checklists).find(c => c.scriptId === scriptId);
+  },
+
+  getChecklistByCalendarEventId: (eventId) => {
+    const { checklists } = get();
+    return Object.values(checklists).find(c => c.calendarEventId === eventId);
+  },
+
+  toggleChecklistItem: (checklistId, itemId) => {
+    const { checklists } = get();
+    const checklist = checklists[checklistId];
+    if (!checklist) return;
+
+    const updatedItems = checklist.items.map(item => {
+      if (item.id === itemId) {
+        return {
+          ...item,
+          completed: !item.completed,
+          completedAt: !item.completed ? new Date().toISOString() : undefined,
+        };
+      }
+      return item;
+    });
+
+    const updatedChecklist = {
+      ...checklist,
+      items: updatedItems,
+      updatedAt: new Date().toISOString(),
+    };
+
+    const updatedChecklists = { ...checklists, [checklistId]: updatedChecklist };
+    set({ checklists: updatedChecklists });
+    try {
+      localStorage.setItem('checklists', JSON.stringify(updatedChecklists));
+    } catch (e) {
+      console.warn('Failed to save checklists to localStorage');
+    }
+  },
+
+  addChecklistItem: (checklistId, item) => {
+    const { checklists } = get();
+    const checklist = checklists[checklistId];
+    if (!checklist) return;
+
+    const newItem = generateChecklistItem(item);
+    const updatedChecklist = {
+      ...checklist,
+      items: [...checklist.items, newItem],
+      updatedAt: new Date().toISOString(),
+    };
+
+    const updatedChecklists = { ...checklists, [checklistId]: updatedChecklist };
+    set({ checklists: updatedChecklists });
+    try {
+      localStorage.setItem('checklists', JSON.stringify(updatedChecklists));
+    } catch (e) {
+      console.warn('Failed to save checklists to localStorage');
+    }
+  },
+
+  removeChecklistItem: (checklistId, itemId) => {
+    const { checklists } = get();
+    const checklist = checklists[checklistId];
+    if (!checklist) return;
+
+    const updatedItems = checklist.items.filter(item => item.id !== itemId);
+    const updatedChecklist = {
+      ...checklist,
+      items: updatedItems,
+      updatedAt: new Date().toISOString(),
+    };
+
+    const updatedChecklists = { ...checklists, [checklistId]: updatedChecklist };
+    set({ checklists: updatedChecklists });
+    try {
+      localStorage.setItem('checklists', JSON.stringify(updatedChecklists));
+    } catch (e) {
+      console.warn('Failed to save checklists to localStorage');
+    }
+  },
+
+  updateChecklistItem: (checklistId, itemId, updates) => {
+    const { checklists } = get();
+    const checklist = checklists[checklistId];
+    if (!checklist) return;
+
+    const updatedItems = checklist.items.map(item =>
+      item.id === itemId ? { ...item, ...updates } : item
+    );
+
+    const updatedChecklist = {
+      ...checklist,
+      items: updatedItems,
+      updatedAt: new Date().toISOString(),
+    };
+
+    const updatedChecklists = { ...checklists, [checklistId]: updatedChecklist };
+    set({ checklists: updatedChecklists });
+    try {
+      localStorage.setItem('checklists', JSON.stringify(updatedChecklists));
+    } catch (e) {
+      console.warn('Failed to save checklists to localStorage');
+    }
+  },
+
+  setActiveChecklistId: (id) => set({ activeChecklistId: id }),
 }));
 
 const loadSavedProfile = () => {
@@ -639,3 +784,17 @@ const loadSavedPomodoroSessions = () => {
 };
 
 loadSavedPomodoroSessions();
+
+const loadSavedChecklists = () => {
+  try {
+    const saved = localStorage.getItem('checklists');
+    if (saved) {
+      const checklists = JSON.parse(saved);
+      useAppStore.setState({ checklists });
+    }
+  } catch (e) {
+    console.warn('Failed to load checklists from localStorage');
+  }
+};
+
+loadSavedChecklists();
