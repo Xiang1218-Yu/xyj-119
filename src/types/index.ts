@@ -188,6 +188,29 @@ export interface ChecklistItem {
   completedAt?: string;
 }
 
+export interface MatchWeights {
+  domain: number;
+  audience: number;
+  style: number;
+  platform: number;
+}
+
+export interface MatchDimension {
+  id: keyof MatchWeights;
+  name: string;
+  description: string;
+  icon: string;
+  color: string;
+}
+
+export interface MatchScoreBreakdown {
+  domain: number;
+  audience: number;
+  style: number;
+  platform: number;
+  overall: number;
+}
+
 export interface ContentChecklist {
   id: string;
   scriptId?: string;

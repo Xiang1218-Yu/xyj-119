@@ -1,4 +1,4 @@
-import { HotSpot, UserProfile, TopicSuggestion, TitleVariant, ScriptFramework, InspirationItem, InspirationDimension, InspirationDimensionData, CalendarEvent, ContentTypeConfig, ChecklistItem, ContentChecklist } from '@/types';
+import { HotSpot, UserProfile, TopicSuggestion, TitleVariant, ScriptFramework, InspirationItem, InspirationDimension, InspirationDimensionData, CalendarEvent, ContentTypeConfig, ChecklistItem, ContentChecklist, MatchWeights, MatchDimension, MatchScoreBreakdown } from '@/types';
 
 export const mockUserProfile: UserProfile = {
   id: '1',
@@ -1509,4 +1509,109 @@ export const generateChecklist = (
     createdAt: now,
     updatedAt: now,
   };
+};
+
+export const matchDimensions: MatchDimension[] = [
+  {
+    id: 'domain',
+    name: '内容领域',
+    description: '热点所属领域与你创作领域的匹配程度',
+    icon: 'Target',
+    color: '#8B5CF6',
+  },
+  {
+    id: 'audience',
+    name: '目标受众',
+    description: '热点受众群体与你目标受众的重合程度',
+    icon: 'Users',
+    color: '#10B981',
+  },
+  {
+    id: 'style',
+    name: '内容风格',
+    description: '热点适合的内容风格与你创作风格的契合度',
+    icon: 'Palette',
+    color: '#F59E0B',
+  },
+  {
+    id: 'platform',
+    name: '发布平台',
+    description: '热点来源平台与你发布平台的匹配度',
+    icon: 'Globe',
+    color: '#06B6D4',
+  },
+];
+
+export const defaultMatchWeights: MatchWeights = {
+  domain: 35,
+  audience: 30,
+  style: 20,
+  platform: 15,
+};
+
+const platformNameMap: Record<string, string> = {
+  douyin: '抖音',
+  weibo: '微博',
+  zhihu: '知乎',
+  xiaohongshu: '小红书',
+  bilibili: 'B站',
+};
+
+const calculateSingleScore = (hotspotValue: string, userValues: string[]): number => {
+  if (userValues.length === 0) return 50;
+  
+  const exactMatch = userValues.some(v => 
+    hotspotValue.includes(v) || v.includes(hotspotValue));
+  if (exactMatch) return 95;
+  
+  const partialMatch = userValues.some(v => {
+    const hotspotKeywords = hotspotValue.split(/[，,\s]+/);
+    return hotspotKeywords.some(kw => v.includes(kw) || kw.includes(v));
+  });
+  if (partialMatch) return 70;
+  
+  return Math.floor(Math.random() * 30) + 30;
+};
+
+export const calculateMatchScoreBreakdown = (
+  hotspot: HotSpot,
+  userProfile: UserProfile,
+  weights: MatchWeights
+): MatchScoreBreakdown => {
+  const platformName = platformNameMap[hotspot.platform] || hotspot.platform;
+  
+  const domainScore = calculateSingleScore(hotspot.category, userProfile.domain);
+  const audienceScore = calculateSingleScore(hotspot.category, userProfile.audience);
+  const styleScore = calculateSingleScore(hotspot.category, userProfile.style);
+  const platformScore = userProfile.platform.includes(platformName) ? 90 : 50;
+
+  const totalWeight = weights.domain + weights.audience + weights.style + weights.platform;
+  const overall = Math.round(
+    (domainScore * weights.domain +
+     audienceScore * weights.audience +
+     styleScore * weights.style +
+     platformScore * weights.platform) / totalWeight
+  );
+
+  return {
+    domain: domainScore,
+    audience: audienceScore,
+    style: styleScore,
+    platform: platformScore,
+    overall,
+  };
+};
+
+export const calculateHotSpotMatchScores = (
+  hotspots: HotSpot[],
+  userProfile: UserProfile,
+  weights: MatchWeights
+): HotSpot[] => {
+  return hotspots.map(hotspot => {
+    const breakdown = calculateMatchScoreBreakdown(hotspot, userProfile, weights);
+    return {
+      ...hotspot,
+      matchScore: breakdown.overall,
+    };
+  });
 };

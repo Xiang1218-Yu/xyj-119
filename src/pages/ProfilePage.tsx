@@ -1,8 +1,9 @@
 import { motion } from 'framer-motion';
-import { User, Target, Users, Palette, Globe, Save, Check } from 'lucide-react';
+import { User, Target, Users, Palette, Globe, Save, Check, Settings2 } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
+import MatchWeightEditor from '@/components/common/MatchWeightEditor';
 
 const domainOptions = [
   '职场', '职业发展', '个人成长', '科技', '美妆', '时尚',
@@ -78,7 +79,7 @@ export default function ProfilePage() {
     description 
   }: { 
     title: string; 
-    icon: any; 
+    icon: React.ComponentType<{ className?: string }>; 
     field: 'domain' | 'audience' | 'style' | 'platform';
     options: string[];
     description: string;
@@ -234,7 +235,10 @@ export default function ProfilePage() {
             transition={{ delay: 0.5 }}
             className="p-5 rounded-2xl bg-slate-800/50 border border-slate-700/50"
           >
-            <h3 className="font-semibold text-slate-100 mb-4">当前定位预览</h3>
+            <div className="flex items-center gap-2 mb-4">
+              <Settings2 className="w-5 h-5 text-violet-400" />
+              <h3 className="font-semibold text-slate-100">当前定位预览</h3>
+            </div>
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <span className="text-sm text-slate-500 w-20">领域：</span>
@@ -278,6 +282,8 @@ export default function ProfilePage() {
               </div>
             </div>
           </motion.div>
+
+          <MatchWeightEditor />
         </div>
       </div>
     </div>

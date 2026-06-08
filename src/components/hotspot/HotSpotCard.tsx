@@ -3,6 +3,7 @@ import { Flame, TrendingUp, TrendingDown, Minus, Check, Eye, Star, Lightbulb } f
 import { HotSpot } from '@/types';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
+import MatchScoreBreakdown from '@/components/hotspot/MatchScoreBreakdown';
 
 interface HotSpotCardProps {
   hotspot: HotSpot;
@@ -32,10 +33,11 @@ const formatHeatIndex = (num: number): string => {
 };
 
 export default function HotSpotCard({ hotspot, index }: HotSpotCardProps) {
-  const { selectedHotSpot, setSelectedHotSpot, generateTopicsForHotSpot, setCurrentPage, toggleFavorite, isFavorite } = useAppStore();
+  const { selectedHotSpot, setSelectedHotSpot, generateTopicsForHotSpot, setCurrentPage, toggleFavorite, isFavorite, getMatchScoreBreakdown } = useAppStore();
   const isSelected = selectedHotSpot?.id === hotspot.id;
   const isHighMatch = hotspot.matchScore >= 80;
   const isFavorited = isFavorite(hotspot.id);
+  const matchBreakdown = isSelected ? getMatchScoreBreakdown(hotspot.id) : null;
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -163,6 +165,12 @@ export default function HotSpotCard({ hotspot, index }: HotSpotCardProps) {
           animate={{ opacity: 1, height: 'auto' }}
           className="mt-4 pt-4 border-t border-violet-500/30"
         >
+          {matchBreakdown && (
+            <div className="mb-4 p-4 rounded-xl bg-slate-900/50 border border-slate-700/50">
+              <MatchScoreBreakdown breakdown={matchBreakdown} />
+            </div>
+          )}
+
           <div className="flex flex-wrap gap-1.5 mb-4">
             {hotspot.relatedTopics.map((topic, i) => (
               <span key={i} className="px-2 py-0.5 rounded-md bg-slate-700/50 text-xs text-slate-300">

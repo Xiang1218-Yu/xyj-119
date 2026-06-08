@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { HotSpot, UserProfile, TopicSuggestion, TitleVariant, ScriptFramework, InspirationCombination, InspirationDimension, InspirationItem, CalendarEvent, PomodoroState, PomodoroMode, PomodoroSession, ContentChecklist, ChecklistItem } from '@/types';
-import { mockHotSpots, mockUserProfile, generateTopics, generateTitles, generateScript, refreshHotSpots, getRandomInspirationItem, mockCalendarEvents, generateCalendarEvent, generateChecklist, generateChecklistItem } from '@/data/mockData';
+import { HotSpot, UserProfile, TopicSuggestion, TitleVariant, ScriptFramework, InspirationCombination, InspirationDimension, CalendarEvent, PomodoroState, PomodoroMode, PomodoroSession, ContentChecklist, ChecklistItem, MatchWeights, MatchScoreBreakdown } from '@/types';
+import { mockHotSpots, mockUserProfile, generateTopics, generateTitles, generateScript, refreshHotSpots, getRandomInspirationItem, mockCalendarEvents, generateCalendarEvent, generateChecklist, generateChecklistItem, defaultMatchWeights, calculateHotSpotMatchScores, calculateMatchScoreBreakdown } from '@/data/mockData';
 
 interface AppState {
   userProfile: UserProfile;
@@ -24,6 +24,7 @@ interface AppState {
   favoriteInspirations: InspirationCombination[];
   lockedDimensions: Record<InspirationDimension, boolean>;
   isRollingInspiration: boolean;
+  matchWeights: MatchWeights;
   
   setSelectedHotSpot: (hotspot: HotSpot | null) => void;
   setSelectedTopic: (topic: TopicSuggestion | null) => void;
@@ -78,11 +79,15 @@ interface AppState {
   removeChecklistItem: (checklistId: string, itemId: string) => void;
   updateChecklistItem: (checklistId: string, itemId: string, updates: Partial<ChecklistItem>) => void;
   setActiveChecklistId: (id: string | null) => void;
+  updateMatchWeights: (weights: Partial<MatchWeights>) => void;
+  resetMatchWeights: () => void;
+  recalculateHotSpotMatchScores: () => void;
+  getMatchScoreBreakdown: (hotspotId: string) => MatchScoreBreakdown | null;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
   userProfile: mockUserProfile,
-  hotSpots: mockHotSpots,
+  hotSpots: calculateHotSpotMatchScores(mockHotSpots, mockUserProfile, defaultMatchWeights),
   selectedHotSpot: null,
   topics: [],
   selectedTopic: null,
@@ -119,6 +124,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     format: false,
   },
   isRollingInspiration: false,
+  matchWeights: defaultMatchWeights,
   checklists: {},
   activeChecklistId: null,
 
@@ -140,9 +146,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   setSortBy: (sortBy) => set({ sortBy }),
   
   updateUserProfile: (profile) => {
-    const { userProfile } = get();
+    const { userProfile, matchWeights, hotSpots } = get();
     const updated = { ...userProfile, ...profile };
-    set({ userProfile: updated });
+    const updatedHotSpots = calculateHotSpotMatchScores(hotSpots, updated, matchWeights);
+    set({ userProfile: updated, hotSpots: updatedHotSpots });
     try {
       localStorage.setItem('userProfile', JSON.stringify(updated));
     } catch (e) {
@@ -154,7 +161,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ isRefreshing: true });
     await new Promise(resolve => setTimeout(resolve, 800));
     const refreshed = refreshHotSpots();
-    set({ hotSpots: refreshed, isRefreshing: false });
+    const { userProfile, matchWeights } = get();
+    const updatedHotSpots = calculateHotSpotMatchScores(refreshed, userProfile, matchWeights);
+    set({ hotSpots: updatedHotSpots, isRefreshing: false });
   },
   
   generateTopicsForHotSpot: (hotSpotId) => {
@@ -712,6 +721,42 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   setActiveChecklistId: (id) => set({ activeChecklistId: id }),
+
+  updateMatchWeights: (weights) => {
+    const { matchWeights, userProfile, hotSpots } = get();
+    const newWeights = { ...matchWeights, ...weights };
+    const updatedHotSpots = calculateHotSpotMatchScores(hotSpots, userProfile, newWeights);
+    set({ matchWeights: newWeights, hotSpots: updatedHotSpots });
+    try {
+      localStorage.setItem('matchWeights', JSON.stringify(newWeights));
+    } catch (e) {
+      console.warn('Failed to save match weights to localStorage');
+    }
+  },
+
+  resetMatchWeights: () => {
+    const { userProfile, hotSpots } = get();
+    const updatedHotSpots = calculateHotSpotMatchScores(hotSpots, userProfile, defaultMatchWeights);
+    set({ matchWeights: defaultMatchWeights, hotSpots: updatedHotSpots });
+    try {
+      localStorage.removeItem('matchWeights');
+    } catch (e) {
+      console.warn('Failed to reset match weights in localStorage');
+    }
+  },
+
+  recalculateHotSpotMatchScores: () => {
+    const { userProfile, hotSpots, matchWeights } = get();
+    const updatedHotSpots = calculateHotSpotMatchScores(hotSpots, userProfile, matchWeights);
+    set({ hotSpots: updatedHotSpots });
+  },
+
+  getMatchScoreBreakdown: (hotspotId) => {
+    const { hotSpots, userProfile, matchWeights } = get();
+    const hotspot = hotSpots.find(h => h.id === hotspotId);
+    if (!hotspot) return null;
+    return calculateMatchScoreBreakdown(hotspot, userProfile, matchWeights);
+  },
 }));
 
 const loadSavedProfile = () => {
@@ -798,3 +843,19 @@ const loadSavedChecklists = () => {
 };
 
 loadSavedChecklists();
+
+const loadSavedMatchWeights = () => {
+  try {
+    const saved = localStorage.getItem('matchWeights');
+    if (saved) {
+      const weights = JSON.parse(saved);
+      const state = useAppStore.getState();
+      const updatedHotSpots = calculateHotSpotMatchScores(state.hotSpots, state.userProfile, weights);
+      useAppStore.setState({ matchWeights: weights, hotSpots: updatedHotSpots });
+    }
+  } catch (e) {
+    console.warn('Failed to load match weights from localStorage');
+  }
+};
+
+loadSavedMatchWeights();
