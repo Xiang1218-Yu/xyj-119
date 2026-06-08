@@ -503,20 +503,28 @@ export const useAppStore = create<AppState>((set, get) => ({
         !s.endTime ? { ...s, endTime: Date.now(), completed: true } : s
       );
 
+      const nextSession: PomodoroSession = {
+        id: `pomodoro-${Date.now()}`,
+        mode: nextMode,
+        duration: nextDuration * 60,
+        startTime: Date.now(),
+        completed: false,
+      };
+
       set({
         pomodoro: {
           ...pomodoro,
-          status: 'idle',
+          status: 'running',
           mode: nextMode,
           timeRemaining: nextDuration * 60,
           completedSessions: pomodoro.mode === 'work' ? pomodoro.completedSessions + 1 : pomodoro.completedSessions,
-          currentSessionStart: null,
-          sessions: updatedSessions,
+          currentSessionStart: Date.now(),
+          sessions: [...updatedSessions, nextSession],
         },
       });
 
       try {
-        localStorage.setItem('pomodoroSessions', JSON.stringify(updatedSessions));
+        localStorage.setItem('pomodoroSessions', JSON.stringify([...updatedSessions, nextSession]));
       } catch (e) {
         console.warn('Failed to save pomodoro sessions to localStorage');
       }

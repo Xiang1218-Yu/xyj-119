@@ -102,6 +102,13 @@ export default function CalendarPage() {
       }
       map[event.scheduledDate].push(event);
     });
+    Object.keys(map).forEach(date => {
+      map[date].sort((a, b) => {
+        const timeA = a.scheduledTime || '00:00';
+        const timeB = b.scheduledTime || '00:00';
+        return timeA.localeCompare(timeB);
+      });
+    });
     return map;
   }, [calendarEvents]);
 
@@ -400,8 +407,8 @@ export default function CalendarPage() {
                         )}
                       </div>
 
-                      <div className="space-y-1">
-                        {dayEvents.slice(0, 3).map((event, eventIndex) => {
+                      <div className="space-y-1 overflow-y-auto max-h-20 pr-0.5 scrollbar-thin">
+                        {dayEvents.map((event, eventIndex) => {
                           const config = getContentTypeConfig(event.contentType);
                           const Icon = contentTypeIcons[event.contentType];
                           
@@ -419,7 +426,7 @@ export default function CalendarPage() {
                                 handleOpenEditModal(event);
                               }}
                               className={cn(
-                                "text-xs p-1.5 rounded-lg border cursor-move group/event",
+                                "text-xs p-1.5 rounded-lg border cursor-move group/event flex-shrink-0",
                                 config.bgColor,
                                 config.borderColor,
                                 draggedEvent === event.id && "opacity-50"
@@ -443,11 +450,6 @@ export default function CalendarPage() {
                             </motion.div>
                           );
                         })}
-                        {dayEvents.length > 3 && (
-                          <div className="text-xs text-slate-500 text-center py-1">
-                            +{dayEvents.length - 3} 更多
-                          </div>
-                        )}
                       </div>
 
                       {!dayEvents.length && (
