@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { HotSpot, UserProfile, TopicSuggestion, TitleVariant, ScriptFramework, InspirationCombination, InspirationDimension, InspirationItem } from '@/types';
-import { mockHotSpots, mockUserProfile, generateTopics, generateTitles, generateScript, refreshHotSpots, getRandomInspirationItem } from '@/data/mockData';
+import { HotSpot, UserProfile, TopicSuggestion, TitleVariant, ScriptFramework, InspirationCombination, InspirationDimension, InspirationItem, CalendarEvent, PomodoroState, PomodoroMode, PomodoroSession } from '@/types';
+import { mockHotSpots, mockUserProfile, generateTopics, generateTitles, generateScript, refreshHotSpots, getRandomInspirationItem, mockCalendarEvents, generateCalendarEvent } from '@/data/mockData';
 
 interface AppState {
   userProfile: UserProfile;
@@ -11,7 +11,10 @@ interface AppState {
   titleVariants: TitleVariant[];
   selectedTitles: TitleVariant[];
   scriptFramework: ScriptFramework | null;
-  currentPage: 'hotspot' | 'topic' | 'title' | 'script' | 'inspiration' | 'profile';
+  currentPage: 'hotspot' | 'topic' | 'title' | 'script' | 'inspiration' | 'profile' | 'calendar';
+  calendarEvents: CalendarEvent[];
+  selectedCalendarEvent: CalendarEvent | null;
+  pomodoro: PomodoroState;
   selectedPlatform: string | null;
   sortBy: 'heat' | 'match' | 'time';
   isRefreshing: boolean;
@@ -47,6 +50,21 @@ interface AppState {
   toggleInspirationFavorite: (inspirationId: string) => void;
   removeFavoriteInspiration: (inspirationId: string) => void;
   generateInspirationCombination: () => InspirationCombination;
+  
+  addCalendarEvent: (event: Partial<CalendarEvent>) => void;
+  updateCalendarEvent: (id: string, updates: Partial<CalendarEvent>) => void;
+  deleteCalendarEvent: (id: string) => void;
+  setSelectedCalendarEvent: (event: CalendarEvent | null) => void;
+  moveCalendarEvent: (id: string, newDate: string, newTime?: string) => void;
+  toggleReminder: (id: string) => void;
+  
+  startPomodoro: (taskTitle?: string) => void;
+  pausePomodoro: () => void;
+  resumePomodoro: () => void;
+  resetPomodoro: () => void;
+  tickPomodoro: () => void;
+  setPomodoroDuration: (mode: PomodoroMode, minutes: number) => void;
+  skipPomodoro: () => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -57,8 +75,22 @@ export const useAppStore = create<AppState>((set, get) => ({
   selectedTopic: null,
   titleVariants: [],
   selectedTitles: [],
-  scriptFramework: null,
+  scriptFramework: null;
   currentPage: 'hotspot',
+  calendarEvents: mockCalendarEvents,
+  selectedCalendarEvent: null,
+  pomodoro: {
+    status: 'idle',
+    mode: 'work',
+    timeRemaining: 25 * 60,
+    workDuration: 25,
+    shortBreakDuration: 5,
+    longBreakDuration: 15,
+    sessionsBeforeLongBreak: 4,
+    completedSessions: 0,
+    currentSessionStart: null,
+    sessions: [],
+  },
   selectedPlatform: null,
   sortBy: 'match',
   isRefreshing: false,
@@ -322,6 +354,211 @@ export const useAppStore = create<AppState>((set, get) => ({
       console.warn('Failed to save inspiration favorites to localStorage');
     }
   },
+
+  addCalendarEvent: (event) => {
+    const { calendarEvents } = get();
+    const newEvent = generateCalendarEvent(event);
+    const updatedEvents = [...calendarEvents, newEvent];
+    set({ calendarEvents: updatedEvents });
+    try {
+      localStorage.setItem('calendarEvents', JSON.stringify(updatedEvents));
+    } catch (e) {
+      console.warn('Failed to save calendar events to localStorage');
+    }
+  },
+
+  updateCalendarEvent: (id, updates) => {
+    const { calendarEvents } = get();
+    const updatedEvents = calendarEvents.map(e =>
+      e.id === id ? { ...e, ...updates } : e
+    );
+    set({ calendarEvents: updatedEvents });
+    try {
+      localStorage.setItem('calendarEvents', JSON.stringify(updatedEvents));
+    } catch (e) {
+      console.warn('Failed to save calendar events to localStorage');
+    }
+  },
+
+  deleteCalendarEvent: (id) => {
+    const { calendarEvents, selectedCalendarEvent } = get();
+    const updatedEvents = calendarEvents.filter(e => e.id !== id);
+    set({
+      calendarEvents: updatedEvents,
+      selectedCalendarEvent: selectedCalendarEvent?.id === id ? null : selectedCalendarEvent,
+    });
+    try {
+      localStorage.setItem('calendarEvents', JSON.stringify(updatedEvents));
+    } catch (e) {
+      console.warn('Failed to save calendar events to localStorage');
+    }
+  },
+
+  setSelectedCalendarEvent: (event) => set({ selectedCalendarEvent: event }),
+
+  moveCalendarEvent: (id, newDate, newTime) => {
+    const { calendarEvents } = get();
+    const updatedEvents = calendarEvents.map(e =>
+      e.id === id ? { ...e, scheduledDate: newDate, scheduledTime: newTime ?? e.scheduledTime } : e
+    );
+    set({ calendarEvents: updatedEvents });
+    try {
+      localStorage.setItem('calendarEvents', JSON.stringify(updatedEvents));
+    } catch (e) {
+      console.warn('Failed to save calendar events to localStorage');
+    }
+  },
+
+  toggleReminder: (id) => {
+    const { calendarEvents } = get();
+    const updatedEvents = calendarEvents.map(e =>
+      e.id === id ? { ...e, reminderEnabled: !e.reminderEnabled } : e
+    );
+    set({ calendarEvents: updatedEvents });
+    try {
+      localStorage.setItem('calendarEvents', JSON.stringify(updatedEvents));
+    } catch (e) {
+      console.warn('Failed to save calendar events to localStorage');
+    }
+  },
+
+  startPomodoro: (taskTitle) => {
+    const { pomodoro } = get();
+    const duration = pomodoro.mode === 'work' ? pomodoro.workDuration :
+      pomodoro.mode === 'shortBreak' ? pomodoro.shortBreakDuration : pomodoro.longBreakDuration;
+    
+    const session: PomodoroSession = {
+      id: `pomodoro-${Date.now()}`,
+      mode: pomodoro.mode,
+      duration: duration * 60,
+      startTime: Date.now(),
+      completed: false,
+      taskTitle,
+    };
+
+    set({
+      pomodoro: {
+        ...pomodoro,
+        status: 'running',
+        timeRemaining: duration * 60,
+        currentSessionStart: Date.now(),
+        sessions: [...pomodoro.sessions, session],
+      },
+    });
+  },
+
+  pausePomodoro: () => {
+    const { pomodoro } = get();
+    set({
+      pomodoro: {
+        ...pomodoro,
+        status: 'paused',
+      },
+    });
+  },
+
+  resumePomodoro: () => {
+    const { pomodoro } = get();
+    set({
+      pomodoro: {
+        ...pomodoro,
+        status: 'running',
+      },
+    });
+  },
+
+  resetPomodoro: () => {
+    const { pomodoro } = get();
+    const duration = pomodoro.mode === 'work' ? pomodoro.workDuration :
+      pomodoro.mode === 'shortBreak' ? pomodoro.shortBreakDuration : pomodoro.longBreakDuration;
+    
+    set({
+      pomodoro: {
+        ...pomodoro,
+        status: 'idle',
+        timeRemaining: duration * 60,
+        currentSessionStart: null,
+        sessions: pomodoro.sessions.map(s => s.endTime ? s : { ...s, endTime: Date.now() }),
+      },
+    });
+  },
+
+  tickPomodoro: () => {
+    const { pomodoro } = get();
+    if (pomodoro.status !== 'running') return;
+
+    const newTimeRemaining = pomodoro.timeRemaining - 1;
+
+    if (newTimeRemaining <= 0) {
+      const nextMode = pomodoro.mode === 'work'
+        ? (pomodoro.completedSessions + 1) % pomodoro.sessionsBeforeLongBreak === 0
+          ? 'longBreak'
+          : 'shortBreak'
+        : 'work';
+
+      const nextDuration = nextMode === 'work' ? pomodoro.workDuration :
+        nextMode === 'shortBreak' ? pomodoro.shortBreakDuration : pomodoro.longBreakDuration;
+
+      const updatedSessions = pomodoro.sessions.map(s =>
+        !s.endTime ? { ...s, endTime: Date.now(), completed: true } : s
+      );
+
+      set({
+        pomodoro: {
+          ...pomodoro,
+          status: 'idle',
+          mode: nextMode,
+          timeRemaining: nextDuration * 60,
+          completedSessions: pomodoro.mode === 'work' ? pomodoro.completedSessions + 1 : pomodoro.completedSessions,
+          currentSessionStart: null,
+          sessions: updatedSessions,
+        },
+      });
+
+      try {
+        localStorage.setItem('pomodoroSessions', JSON.stringify(updatedSessions));
+      } catch (e) {
+        console.warn('Failed to save pomodoro sessions to localStorage');
+      }
+    } else {
+      set({
+        pomodoro: {
+          ...pomodoro,
+          timeRemaining: newTimeRemaining,
+        },
+      });
+    }
+  },
+
+  setPomodoroDuration: (mode, minutes) => {
+    const { pomodoro } = get();
+    const key = mode === 'work' ? 'workDuration' :
+      mode === 'shortBreak' ? 'shortBreakDuration' : 'longBreakDuration';
+    
+    set({
+      pomodoro: {
+        ...pomodoro,
+        [key]: minutes,
+        timeRemaining: pomodoro.mode === mode && pomodoro.status === 'idle' ? minutes * 60 : pomodoro.timeRemaining,
+      },
+    });
+  },
+
+  skipPomodoro: () => {
+    const { pomodoro } = get();
+    const nextMode = pomodoro.mode === 'work' ? 'shortBreak' : 'work';
+    const nextDuration = nextMode === 'work' ? pomodoro.workDuration : pomodoro.shortBreakDuration;
+
+    set({
+      pomodoro: {
+        ...pomodoro,
+        status: 'idle',
+        mode: nextMode,
+        timeRemaining: nextDuration * 60,
+        currentSessionStart: null,
+      },
+    });
+  },
 }));
 
 const loadSavedProfile = () => {
@@ -364,3 +601,33 @@ const loadSavedInspirationFavorites = () => {
 };
 
 loadSavedInspirationFavorites();
+
+const loadSavedCalendarEvents = () => {
+  try {
+    const saved = localStorage.getItem('calendarEvents');
+    if (saved) {
+      const calendarEvents = JSON.parse(saved);
+      useAppStore.setState({ calendarEvents });
+    }
+  } catch (e) {
+    console.warn('Failed to load calendar events from localStorage');
+  }
+};
+
+loadSavedCalendarEvents();
+
+const loadSavedPomodoroSessions = () => {
+  try {
+    const saved = localStorage.getItem('pomodoroSessions');
+    if (saved) {
+      const sessions = JSON.parse(saved);
+      useAppStore.setState(state => ({
+        pomodoro: { ...state.pomodoro, sessions },
+      }));
+    }
+  } catch (e) {
+    console.warn('Failed to load pomodoro sessions from localStorage');
+  }
+};
+
+loadSavedPomodoroSessions();

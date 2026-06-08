@@ -3,6 +3,10 @@ export type Trend = 'rising' | 'stable' | 'falling';
 export type CompetitionLevel = 'low' | 'medium' | 'high';
 export type TitleStyle = 'curiosity' | 'emotion' | 'practical' | 'controversy' | 'story';
 
+export type ContentType = 'article' | 'video' | 'shortVideo' | 'live' | 'podcast' | 'carousel';
+export type PomodoroMode = 'work' | 'shortBreak' | 'longBreak';
+export type PomodoroStatus = 'idle' | 'running' | 'paused';
+
 export interface HotSpot {
   id: string;
   title: string;
@@ -123,4 +127,50 @@ export interface InspirationState {
   favoriteCombinations: InspirationCombination[];
   lockedDimensions: Record<InspirationDimension, boolean>;
   isRolling: boolean;
+}
+
+export interface ContentTypeConfig {
+  type: ContentType;
+  label: string;
+  color: string;
+  bgColor: string;
+  borderColor: string;
+}
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  description?: string;
+  contentType: ContentType;
+  platform: string;
+  scheduledDate: string;
+  scheduledTime?: string;
+  reminderEnabled: boolean;
+  reminderMinutesBefore?: number;
+  topicId?: string;
+  status: 'draft' | 'scheduled' | 'published' | 'cancelled';
+  createdAt: string;
+}
+
+export interface PomodoroSession {
+  id: string;
+  mode: PomodoroMode;
+  duration: number;
+  startTime: number;
+  endTime?: number;
+  completed: boolean;
+  taskTitle?: string;
+}
+
+export interface PomodoroState {
+  status: PomodoroStatus;
+  mode: PomodoroMode;
+  timeRemaining: number;
+  workDuration: number;
+  shortBreakDuration: number;
+  longBreakDuration: number;
+  sessionsBeforeLongBreak: number;
+  completedSessions: number;
+  currentSessionStart: number | null;
+  sessions: PomodoroSession[];
 }

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Flame, Lightbulb, FileText, Scroll, User, Sparkles } from 'lucide-react';
+import { Flame, Lightbulb, FileText, Scroll, User, Sparkles, Calendar } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
 
@@ -9,6 +9,7 @@ const navItems = [
   { id: 'topic', label: '选题生成', icon: Lightbulb },
   { id: 'title', label: '标题优化', icon: FileText },
   { id: 'script', label: '脚本框架', icon: Scroll },
+  { id: 'calendar', label: '发布日历', icon: Calendar },
   { id: 'profile', label: '账号设置', icon: User },
 ] as const;
 

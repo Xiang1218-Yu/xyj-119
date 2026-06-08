@@ -1,4 +1,4 @@
-import { HotSpot, UserProfile, TopicSuggestion, TitleVariant, ScriptFramework, InspirationItem, InspirationDimension, InspirationDimensionData } from '@/types';
+import { HotSpot, UserProfile, TopicSuggestion, TitleVariant, ScriptFramework, InspirationItem, InspirationDimension, InspirationDimensionData, CalendarEvent, ContentTypeConfig } from '@/types';
 
 export const mockUserProfile: UserProfile = {
   id: '1',
@@ -1194,4 +1194,141 @@ export const inspirationPool: Record<InspirationDimension, InspirationItem[]> = 
 export const getRandomInspirationItem = (dimension: InspirationDimension): InspirationItem => {
   const items = inspirationPool[dimension];
   return items[Math.floor(Math.random() * items.length)];
+};
+
+export const contentTypeConfigs: ContentTypeConfig[] = [
+  { type: 'article', label: '图文', color: 'text-violet-400', bgColor: 'bg-violet-500/20', borderColor: 'border-violet-500/30' },
+  { type: 'video', label: '长视频', color: 'text-emerald-400', bgColor: 'bg-emerald-500/20', borderColor: 'border-emerald-500/30' },
+  { type: 'shortVideo', label: '短视频', color: 'text-rose-400', bgColor: 'bg-rose-500/20', borderColor: 'border-rose-500/30' },
+  { type: 'live', label: '直播', color: 'text-amber-400', bgColor: 'bg-amber-500/20', borderColor: 'border-amber-500/30' },
+  { type: 'podcast', label: '播客', color: 'text-cyan-400', bgColor: 'bg-cyan-500/20', borderColor: 'border-cyan-500/30' },
+  { type: 'carousel', label: '图文集', color: 'text-pink-400', bgColor: 'bg-pink-500/20', borderColor: 'border-pink-500/30' },
+];
+
+const getDateString = (daysFromNow: number): string => {
+  const date = new Date();
+  date.setDate(date.getDate() + daysFromNow);
+  return date.toISOString().split('T')[0];
+};
+
+export const mockCalendarEvents: CalendarEvent[] = [
+  {
+    id: 'cal-1',
+    title: '00后职场新人指南',
+    description: '分享00后如何在职场中保持个性同时获得认可',
+    contentType: 'article',
+    platform: '公众号',
+    scheduledDate: getDateString(-2),
+    scheduledTime: '09:00',
+    reminderEnabled: true,
+    reminderMinutesBefore: 60,
+    status: 'published',
+    createdAt: '2024-01-10',
+  },
+  {
+    id: 'cal-2',
+    title: '新人入职5个加分细节',
+    description: '短视频版本，适合抖音和视频号',
+    contentType: 'shortVideo',
+    platform: '抖音',
+    scheduledDate: getDateString(-1),
+    scheduledTime: '18:00',
+    reminderEnabled: true,
+    reminderMinutesBefore: 30,
+    status: 'published',
+    createdAt: '2024-01-12',
+  },
+  {
+    id: 'cal-3',
+    title: '老板视角看00后员工',
+    description: '深度长文，探讨代际管理差异',
+    contentType: 'article',
+    platform: '知乎',
+    scheduledDate: getDateString(0),
+    scheduledTime: '10:00',
+    reminderEnabled: true,
+    reminderMinutesBefore: 60,
+    status: 'scheduled',
+    createdAt: '2024-01-13',
+  },
+  {
+    id: 'cal-4',
+    title: '职场避坑指南直播',
+    description: '和粉丝互动答疑',
+    contentType: 'live',
+    platform: '视频号',
+    scheduledDate: getDateString(1),
+    scheduledTime: '20:00',
+    reminderEnabled: true,
+    reminderMinutesBefore: 120,
+    status: 'scheduled',
+    createdAt: '2024-01-14',
+  },
+  {
+    id: 'cal-5',
+    title: '35岁职场危机分析',
+    description: '数据驱动的深度分析',
+    contentType: 'video',
+    platform: 'B站',
+    scheduledDate: getDateString(3),
+    scheduledTime: '19:30',
+    reminderEnabled: false,
+    status: 'scheduled',
+    createdAt: '2024-01-15',
+  },
+  {
+    id: 'cal-6',
+    title: '年轻人消费观念变化',
+    description: '小红书图文笔记',
+    contentType: 'carousel',
+    platform: '小红书',
+    scheduledDate: getDateString(5),
+    scheduledTime: '12:00',
+    reminderEnabled: true,
+    reminderMinutesBefore: 30,
+    status: 'draft',
+    createdAt: '2024-01-15',
+  },
+  {
+    id: 'cal-7',
+    title: '副业赚钱经验分享',
+    description: '播客节目',
+    contentType: 'podcast',
+    platform: '小宇宙',
+    scheduledDate: getDateString(7),
+    scheduledTime: '08:00',
+    reminderEnabled: true,
+    reminderMinutesBefore: 60,
+    status: 'draft',
+    createdAt: '2024-01-15',
+  },
+  {
+    id: 'cal-8',
+    title: '春节特别企划：年终总结',
+    description: '短视频合集',
+    contentType: 'shortVideo',
+    platform: '抖音',
+    scheduledDate: getDateString(10),
+    scheduledTime: '10:00',
+    reminderEnabled: false,
+    status: 'draft',
+    createdAt: '2024-01-15',
+  },
+];
+
+export const generateCalendarEvent = (data: Partial<CalendarEvent>): CalendarEvent => {
+  return {
+    id: `cal-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    title: data.title || '新内容',
+    description: data.description || '',
+    contentType: data.contentType || 'article',
+    platform: data.platform || '公众号',
+    scheduledDate: data.scheduledDate || new Date().toISOString().split('T')[0],
+    scheduledTime: data.scheduledTime || '09:00',
+    reminderEnabled: data.reminderEnabled ?? true,
+    reminderMinutesBefore: data.reminderMinutesBefore || 30,
+    topicId: data.topicId,
+    status: data.status || 'draft',
+    createdAt: new Date().toISOString(),
+  };
 };

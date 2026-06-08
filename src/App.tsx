@@ -6,6 +6,7 @@ import TitlePage from '@/pages/TitlePage';
 import ScriptPage from '@/pages/ScriptPage';
 import ProfilePage from '@/pages/ProfilePage';
 import InspirationPage from '@/pages/InspirationPage';
+import CalendarPage from '@/pages/CalendarPage';
 import { AnimatePresence, motion } from 'framer-motion';
 
 export default function App() {
@@ -23,6 +24,8 @@ export default function App() {
         return <TitlePage />;
       case 'script':
         return <ScriptPage />;
+      case 'calendar':
+        return <CalendarPage />;
       case 'profile':
         return <ProfilePage />;
       default:
