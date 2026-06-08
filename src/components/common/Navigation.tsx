@@ -78,7 +78,7 @@ export default function Navigation() {
         <div className="bg-gradient-to-br from-violet-600/20 to-purple-600/20 rounded-xl p-4 border border-violet-500/20">
           <p className="text-xs text-slate-400 mb-1">当前进度</p>
           <div className="flex gap-1 mb-2">
-            {navItems.slice(0, 4).map((_, i) => {
+            {navItems.slice(0, 6).map((_, i) => {
               const stepIndex = navItems.findIndex(n => n.id === currentPage);
               const isDone = i < stepIndex;
               const isCurrent = i === stepIndex;
@@ -95,9 +95,11 @@ export default function Navigation() {
           </div>
           <p className="text-xs text-violet-300">
             {currentPage === 'hotspot' && '发现热点中...'}
+            {currentPage === 'inspiration' && '抽取创作灵感...'}
             {currentPage === 'topic' && '生成选题建议...'}
             {currentPage === 'title' && '优化标题方案...'}
             {currentPage === 'script' && '搭建脚本框架...'}
+            {currentPage === 'calendar' && '规划发布日程...'}
             {currentPage === 'profile' && '个性化设置'}
           </p>
         </div>

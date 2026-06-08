@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, RotateCcw, SkipForward, Clock, Settings, X, Check } from 'lucide-react';
+import { Play, Pause, RotateCcw, SkipForward, Clock, Settings, Check } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
 import { useEffect, useState, useRef } from 'react';

@@ -75,7 +75,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   selectedTopic: null,
   titleVariants: [],
   selectedTitles: [],
-  scriptFramework: null;
+  scriptFramework: null,
   currentPage: 'hotspot',
   calendarEvents: mockCalendarEvents,
   selectedCalendarEvent: null,

@@ -15,7 +15,7 @@ import {
   FileText,
   Radio,
   Image,
-  LiveTv
+  TvMinimal
 } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
@@ -37,7 +37,7 @@ const contentTypeIcons: Record<ContentType, any> = {
   article: FileText,
   video: Video,
   shortVideo: Clock,
-  live: LiveTv,
+  live: TvMinimal,
   podcast: Radio,
   carousel: Image,
 };
@@ -64,10 +64,7 @@ export default function CalendarPage() {
     addCalendarEvent, 
     updateCalendarEvent, 
     deleteCalendarEvent,
-    selectedCalendarEvent,
-    setSelectedCalendarEvent,
-    moveCalendarEvent,
-    toggleReminder
+    moveCalendarEvent
   } = useAppStore();
 
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -171,14 +168,18 @@ export default function CalendarPage() {
     setEditingEvent(null);
   };
 
-  const handleDragStart = (e: React.DragEvent, eventId: string) => {
+  const handleDragStart = (e: any, eventId: string) => {
     setDraggedEvent(eventId);
-    e.dataTransfer.effectAllowed = 'move';
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+    }
   };
 
-  const handleDragOver = (e: React.DragEvent, date: string) => {
+  const handleDragOver = (e: any, date: string) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = 'move';
+    }
     setDragOverDate(date);
   };
 
@@ -186,7 +187,7 @@ export default function CalendarPage() {
     setDragOverDate(null);
   };
 
-  const handleDrop = (e: React.DragEvent, date: string) => {
+  const handleDrop = (e: any, date: string) => {
     e.preventDefault();
     if (draggedEvent) {
       moveCalendarEvent(draggedEvent, date);
